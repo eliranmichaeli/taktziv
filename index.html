@@ -462,13 +462,12 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
       <button class="auth-forgot" id="forgotBtn" onclick="handleForgot()">שכחתי סיסמה</button>
       <div class="auth-divider"><span>או</span></div>
       <button class="auth-google" onclick="handleGoogle()">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806 .54-1.837 .86-3.048 .86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827 .957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/></svg>
         המשך עם Google
       </button>
     </div>
   </div>
 </div>
-
 
 <!-- Onboarding Wizard -->
 <div id="obScreen" style="display:none" class="ob-screen">
@@ -488,19 +487,10 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
   </div>
 </div>
 
-<!-- Main App v3.1 -->
+<!-- Main App -->
 <div id="app" style="display:none"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  getAuth, onAuthStateChanged,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider,
-  signOut, sendPasswordResetEmail, updateProfile
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
+<script>
 // ── Firebase config ──────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAC-qpsCZyE1J6bxSjjK9SEPKPipIKexqg",
@@ -515,9 +505,7 @@ const firestore   = getFirestore(firebaseApp);
 const auth        = getAuth(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 
-// getRedirectResult handled inside onAuthStateChanged below
-
-// ── Landing navigation (module-level) ────────────────────
+// ── Landing navigation ──────────────────────────────
 function initLanding() {
   const L = id => document.getElementById(id);
   const showScreen = id => {
@@ -727,7 +715,7 @@ async function updateUserMeta(user) {
     const snap = await getDoc(ref);
     const isGoogle = user.providerData && user.providerData[0] && user.providerData[0].providerId === 'google.com';
     if(!snap.exists()) {
-      await setDoc(ref, { email: user.email||'', displayName: user.displayName||'', plan:'free', joinedAt: new Date().toISOString(), emailConsent: isGoogle, lastActive: new Date().toISOString() });
+      await setDoc(ref, { email: user.email||'', displayName: user.displayName||'', plan: 'free', joinedAt: new Date().toISOString(), emailConsent: isGoogle, lastActive: new Date().toISOString() });
     } else {
       await setDoc(ref, { lastActive: new Date().toISOString() }, { merge: true });
     }
@@ -1137,206 +1125,326 @@ function buildApp(){
     (S.showUserMenu?buildUserMenu():'');
 }
 
-
-
-// ── Theme toggle ─────────────────────────────────────
-function initTheme() {
-  const saved = localStorage.getItem('theme');
-  if(saved === 'light') document.body.classList.add('light-mode');
-}
-window.toggleTheme = function() {
-  const isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  render();
-};
-initTheme();
-
-// ── Onboarding Wizard ─────────────────────────────────────
-const OB_STEPS = [
-  { id:'account_type', label:'🏠 סוג חשבון',        emoji:'🏠', title:'החשבון הוא עבור...', sub:'בחר את סוג החשבון שמתאים לך ורשום שמות' },
-  { id:'profile',      label:'👤 פרופיל אישי',      emoji:'👤', title:'ספר לנו עליך', sub:'נתאים את האפליקציה בדיוק עבורך' },
-  { id:'budget',       label:'📅 הגדרת תקציב',      emoji:'📅', title:'מתי מתחיל החודש שלך?', sub:'היום בחודש שממנו תחשב ההוצאות' },
-  { id:'cats_p',       label:'👤 קטגוריות אישיות',  emoji:'🗂', title:'קטגוריות הוצאות אישיות', sub:'בחר את הקטגוריות הרלוונטיות עבורך' },
-  { id:'cats_f',       label:'🏡 קטגוריות משפחה',  emoji:'🏡', title:'קטגוריות הוצאות משפחה', sub:'הוצאות משותפות של כל המשפחה' },
-  { id:'income',       label:'💵 מקורות הכנסה',     emoji:'💵', title:'מאיפה מגיעות ההכנסות שלך?', sub:'בחר את מקורות ההכנסה שלך' },
-  { id:'currency',     label:'💱 מטבע',              emoji:'💱', title:'באיזה מטבע תנהל את התקציב?', sub:'תוכל לשנות מטבע לכל פריט בנפרד' },
-  { id:'cards',        label:'💳 כרטיסי אשראי',     emoji:'💳', title:'כרטיסי האשראי שלך', sub:'הגדר כרטיסים לצורך מעקב תזרים (אפשר לדלג)' },
-  { id:'goals',        label:'🎯 מטרות פיננסיות',   emoji:'🎯', title:'מה המטרות הפיננסיות שלך?', sub:'יעזור לנו לתת לך ניתוח AI מדויק (אפשר לדלג)' },
-];
-
-const OB_CATS_PERSONAL = [
-  'מזון ומסעדות','קפה וחטיפים','תחבורה','דלק','חניה ותחבורה ציבורית',
-  'בריאות ורפואה','תרופות','בידור ופנאי','בילויים','קולנוע ותיאטרון',
-  'ביגוד והנעלה','קוסמטיקה וטיפוח','חינוך וקורסים','ספרים','ספורט וחדר כושר',
-  'אלכוהול וסיגריות','מנויים (נטפליקס וכד׳)','קניות אונליין','מתנות','אחר'
-];
-
-const OB_CATS_FAMILY = [
-  'שכר דירה / משכנתא','ארנונה','חשמל','מים וגז','אינטרנט וטלפון',
-  'ביטוחים','קניות סופר','ילדים — חוגים','ילדים — ביגוד','ילדים — צהרון / גן',
-  'חיסכון / קרן חירום','חופשה ונסיעות','תיקונים ואחזקה','רכב — ביטוח ורישוי',
-  'עוזרת בית','חיות מחמד','ריהוט ועיצוב','קניות אונליין משפחתי','אחר'
-];
-
-const OB_INCOME_TYPES = [
-  { id:'salary',    label:'💼 משכורת (מעסיק 1)', detail:true, detailLabel:'שם המעסיק', placeholder:'לדוגמה: חברת X בע"מ' },
-  { id:'salary2',   label:'💼 משכורת (מעסיק 2)', detail:true, detailLabel:'שם המעסיק', placeholder:'לדוגמה: עבודה נוספת' },
-  { id:'salary3',   label:'💼 משכורת (מעסיק 3)', detail:true, detailLabel:'שם המעסיק', placeholder:'לדוגמה: פרילנס' },
-  { id:'business',  label:'🏢 הכנסה מעסק', detail:true, detailLabel:'שם העסק / תחום', placeholder:'לדוגמה: ייעוץ עצמאי' },
-  { id:'realestate',label:'🏠 הכנסה מנדל"ן', detail:true, detailLabel:'פירוט (אופציונלי)', placeholder:'לדוגמה: השכרת דירה' },
-  { id:'allowance', label:'👶 קצבאות (ביטוח לאומי)', detail:false },
-  { id:'pension',   label:'🧓 פנסיה / קצבת זקנה', detail:false },
-  { id:'invest',    label:'📈 השקעות / דיבידנדים', detail:false },
-  { id:'partner',   label:'👫 הכנסת בן/בת זוג', detail:true, detailLabel:'שם המעסיק', placeholder:'לדוגמה: משרד הבריאות' },
-  { id:'other',     label:'💰 אחר', detail:true, detailLabel:'פירוט', placeholder:'תאר את מקור ההכנסה' },
-];
-
-let obStep = 0;
-let obData = {
-  accountType: 'personal', partnerName: '', currency: 'ILS', hasSoloFamily: false, creditCards: [], financialGoals: { monthlySavingTarget:0, monthlyBudget:0, emergencyFund:false, debtFree:false, yearlyTarget:0, notes:'' }, cards: [],
-  name: '', dob: '', budgetStartDay: 1, monthlyBudgetP: '', monthlyBudgetF: '',
-  catsPersonal: ['מזון ומסעדות','תחבורה','ביגוד והנעלה','בריאות ורפואה','ספורט וחדר כושר','בידור ופנאי','קניות אונליין','אחר'],
-  catsFamily: ['שכר דירה / משכנתא','חשמל','קניות סופר','ילדים — חוגים','ביטוחים','חופשה ונסיעות','אחר'],
-  incomes: {},
-};
-
-function showOnboarding() {
-  document.getElementById('obScreen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  obStep = 0;
-  renderObStep();
-}
-
-function renderObStep() { window.obData = obData; // keep in sync
-
-  const step = OB_STEPS[obStep];
-  // Progress dots
-  document.getElementById('obStepDots').innerHTML = OB_STEPS.map((s,i) =>
-    `<div class="ob-step-dot ${i<obStep?'done':i===obStep?'active':''}"></div>`
-  ).join('');
-  document.getElementById('obStepLabel').textContent = `שלב ${obStep+1} מתוך ${OB_STEPS.length} — ${step.label}`;
-  document.getElementById('obBackBtn').style.display = obStep > 0 ? 'block' : 'none';
-  document.getElementById('obNextBtn').textContent = obStep === OB_STEPS.length-1 ? '✅ סיים והתחל!' : 'המשך ←';
-
-  let html = `<div class="ob-card">
-    <div class="ob-emoji">${step.emoji}</div>
-    <div class="ob-card-title">${step.title}</div>
-    <div class="ob-card-sub">${step.sub}</div>`;
-
-  if(step.id === 'account_type') {
-    const types = [
-      {
-        id: 'personal',
-        icon: '👤',
-        title: 'שימוש אישי',
-        sub: 'אישי, חיסכון, הכנסות',
-        p1label: 'שמך', p1ph: 'למשל: דניאל',
-        p2: false,
-      },
-      {
-        id: 'family_solo',
-        icon: '🏠',
-        title: 'משפחתי (ללא בן/בת זוג)',
-        sub: 'אישי, משפחה, חיסכון אישי, חיסכון משפחתי',
-        p1label: 'שמך', p1ph: 'למשל: אלירן',
-        p2: false,
-      },
-      {
-        id: 'family',
-        icon: '👨‍👩‍👧',
-        title: 'משפחתי עם בן/בת זוג',
-        sub: 'אישי 1, אישי 2, משפחה, חיסכון אישי, חיסכון משפחתי',
-        p1label: 'שמך', p1ph: 'למשל: אלירן',
-        p2: true, p2label: 'שם בן/בת הזוג', p2ph: 'למשל: שירה',
-      },
-    ];
-    html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
-      ${types.map(t=>`
-        <div class="ob-chip${obData.accountType===t.id?' selected':''}"
-             onclick="window.obData.accountType='${t.id}';if('${t.id}'!=='family')window.obData.partnerName='';var el=document.getElementById('obP1Name');if(el)window.obData.name=el.value;window.renderObStep()"
-             style="padding:14px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;cursor:pointer">
-          <span style="font-size:26px;flex-shrink:0">${t.icon}</span>
-          <div style="flex:1">
-            <div style="font-weight:700;font-size:14px">${t.title}</div>
-            <div style="font-size:11px;color:#7b82a8;margin-top:2px">${t.sub}</div>
-          </div>
-          ${obData.accountType===t.id?'<span style="color:#6c63ff;font-size:18px;flex-shrink:0">✓</span>':''}
-        </div>`).join('')}
-    </div>`;
-
-    // Name fields for selected type
-    const sel = types.find(t=>t.id===obData.accountType)||types[0];
-    html += `<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+// ── Header ──────────────────────────────────────────────
+function buildHeader(){
+  const name = db.settings.profile.name || (currentUser.displayName ? currentUser.displayName.split(' ')[0] : '');
+  return `
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">💰</div>
       <div>
-        <div style="font-size:12px;color:#7b82a8;margin-bottom:5px;font-weight:600">${sel.p1label}</div>
-        <input class="ob-input" id="obP1Name" placeholder="${sel.p1ph}" value="${obData.name||''}"
-          oninput="window.obData.name=this.value" style="margin-bottom:0"/>
+        <div class="logo-title">תקציב</div>
+        <div class="logo-sub">שלום ${name}</div>
       </div>
-      ${sel.p2?`<div>
-        <div style="font-size:12px;color:#7b82a8;margin-bottom:5px;font-weight:600">${sel.p2label}</div>
-        <input class="ob-input" id="obP2Name" placeholder="${sel.p2ph}" value="${obData.partnerName||''}"
-          oninput="window.obData.partnerName=this.value" style="margin-bottom:0"/>
+    </div>
+    <div class="header-right">
+      <span class="sync-dot"></span>
+      <div class="user-badge" onclick="S.showUserMenu=!S.showUserMenu;render()">${name}</div>
+    </div>
+  </div>`;
+}
+
+// ── Nav ─────────────────────────────────────────────────
+function buildNav() {
+  const tabs = [
+    {id:'personal', label:tabLabel('personal','אישי'), icon:'👤'},
+    {id:'family', label:tabLabel('family','משפחה'), icon:'🏡'},
+    {id:'income', label:tabLabel('income','הכנסות'), icon:'💰'},
+    {id:'savings', label:tabLabel('savings','חיסכון'), icon:'🏦'},
+    {id:'tasks', label:tabLabel('tasks','משימות'), icon:'✅'},
+    {id:'ai', label:tabLabel('ai','AI'), icon:'🤖'},
+    {id:'settings', label:tabLabel('settings','הגדרות'), icon:'⚙️'},
+  ].filter(t=>!tabHidden(t.id));
+  return `<div class="nav">
+    ${tabs.map(t=>`<button class="nav-btn${S.tab===t.id?' active':''}" data-action="tab" data-tab="${t.id}">${t.label}</button>`).join('')}
+  </div>`;
+}
+
+function buildMobileBottomNav() {
+  const tabs = [
+    {id:'personal', icon:'👤', label:'אישי'},
+    {id:'family', icon:'🏡', label:'משפחה'},
+    {id:'income', icon:'💰', label:'הכנסות'},
+    {id:'savings', icon:'🏦', label:'חיסכון'},
+    {id:'ai', icon:'🤖', label:'AI'},
+  ].filter(t=>!tabHidden(t.id));
+  return `<div class="mobile-bottom-nav">
+    ${tabs.map(t=>`<button class="mbn-btn${S.tab===t.id?' active':''}" data-action="tab" data-tab="${t.id}">
+      <span class="mbn-icon">${t.icon}</span>
+      <span class="mbn-label">${t.label}</span>
+    </button>`).join('')}
+  </div>`;
+}
+
+// ── Backup Bar ──────────────────────────────────────────
+function buildBackupBar() {
+  return `<div class="backup-bar">
+    <span class="bar-label">גיבוי נתונים</span>
+    <button class="btn-backup" data-action="backup">📥 גיבוי</button>
+    <button class="btn-restore" data-action="restore">📤 שחזור</button>
+    <button class="btn-email" data-action="email-backup">✉️ שלח למייל</button>
+  </div>`;
+}
+
+// ── Month Bar ───────────────────────────────────────────
+function buildMonthBar() {
+  const years = [...new Set([S.year-1,S.year,S.year+1])];
+  return `<div class="month-bar">
+    <select class="year-sel" onchange="S.year=parseInt(this.value);render()">
+      ${years.map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}
+    </select>
+    ${MONTHS.map((m,i)=>`<button class="mbtn${i===S.month?' active':''}" data-action="month" data-m="${i}">${m}</button>`).join('')}
+  </div>`;
+}
+
+// ── User Menu ───────────────────────────────────────────
+function buildUserMenu() {
+  return `<div class="user-menu">
+    <div class="user-menu-email">${currentUser.email||''}</div>
+    <button class="user-menu-item" data-action="toggle-theme">${document.body.classList.contains('light-mode')?'🌙 מצב כהה':'☀️ מצב בהיר'}</button>
+    <button class="user-menu-item" data-action="logout">🚪 התנתק</button>
+    <button class="user-menu-item danger" data-action="delete-account">🗑 מחק חשבון</button>
+  </div>`;
+}
+
+// ── Footer ──────────────────────────────────────────────
+function buildFooter() {
+  return `<div class="app-footer">
+    <div class="app-footer-logo">💰</div>
+    <div class="app-footer-copy">תקציב v20260314</div>
+    <div class="app-footer-divider"></div>
+    <div class="app-footer-disclaimer">האפליקציה מסופקת כפי שהיא, ללא אחריות. הנתונים נשמרים בענן מאובטח של Firebase (Google Cloud). מומלץ לא לשמור מידע רגיש. פרטיות: הנתונים שלך פרטיים ולא נגישים לאחרים.</div>
+  </div>`;
+}
+
+// ── Expenses ────────────────────────────────────────────
+function buildExpWithTasks(type) {
+  const isPersonal2 = type==='personal2';
+  const title = type==='personal'?'אישי':type==='family'?'משפחה':'אישי 2';
+  const icon = type==='personal'?'👤':type==='family'?'🏡':'👤';
+  const cur = getCurrency(type);
+  const sym = getCurrencySymbol(cur);
+  const m=S.month, y=S.year;
+  const alerts=getAlerts(m,y);
+  const fTot=fixedTotal(type);
+  const vTot=varTotal(type,m,y);
+  const total=fTot+vTot;
+  const bud=getMonthBudget(type,m,y);
+  const remaining=bud-total;
+  return `<div class="card">
+    <div class="section-title">${icon} הוצאות ${title} — ${MONTHS[m]} ${y}</div>
+    ${buildBudgetBar(type,m,y)}
+    ${alerts.length?`<div class="alert-banner">⚠️ חרגת בקטגוריות: ${alerts.map(a=>a.cat).join(', ')}</div>`:''}
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">קבועות</div>
+        <div class="stat-val">${fmt(fTot)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💸</div>
+        <div class="stat-label">משתנות</div>
+        <div class="stat-val">${fmt(vTot)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">∑</div>
+        <div class="stat-label">סה"כ</div>
+        <div class="stat-val">${fmt(total)}</div>
+      </div>
+      ${bud?`<div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">נותר</div>
+        <div class="stat-val" style="color:${remaining>=0?'#68d391':'#f87171'}">${fmt(Math.abs(remaining))}${remaining<0?' -':''}</div>
       </div>`:''}
-    </div>`;
-  }
+    </div>
+    <!-- Chart Canvas -->
+    <canvas id="expenseChart" style="max-width: 300px; margin: 20px auto; display: block;"></canvas>
+  </div>
+  <div class="card">
+    <div class="section-title">📅 הוצאות קבועות</div>
+    ${buildFixed(type)}
+  </div>
+  <div class="card">
+    <div class="section-title">💸 הוצאות משתנות</div>
+    ${buildVariable(type)}
+  </div>
+  ${buildTasksSection(type)}
+  `;
+}
 
-  if(step.id === 'profile') {
-    html += `
-    <div style="font-size:13px;color:#c8cce0;font-weight:600;margin-bottom:8px">👋 שלום ${obData.name||''}!</div>
-    <div style="font-size:12px;color:#7b82a8;margin-bottom:6px;font-weight:600">📅 תאריך לידה (אופציונלי)</div>
-    <input class="ob-input" id="obDob" type="date" placeholder="תאריך לידה" value="${obData.dob}"
-      style="color:${obData.dob?'#e8eaf0':'#7b82a8'};-webkit-appearance:none;"/>
-    <div style="font-size:11px;color:#7b82a8;margin-top:2px">לקבלת תזכורות ואפשרויות עתידיות</div>`;
-  }
+function getExpensesByCategory(type, m, y) {
+  const expenses = {};
+  varForMonth(type, m, y).forEach(e => {
+    const cat = e.category || 'אחר';
+    expenses[cat] = (expenses[cat] || 0) + toBase(e.amount || 0, e.currency);
+  });
+  return expenses;
+}
 
-  if(step.id === 'budget') {
-    html += `<div style="margin-bottom:14px">
-      <div style="font-size:13px;color:#c8cce0;margin-bottom:10px;font-weight:600">ביום כמה מתחיל החודש התקציבי שלך?</div>
-      <div class="ob-chips">
-        ${[1,5,10,15,20,25].map(d=>`<div class="ob-chip${obData.budgetStartDay===d?' selected':''}" onclick="window.obData.budgetStartDay=${d};window.renderObStep()">${d} לחודש</div>`).join('')}
+function buildFixed(type) {
+  const entries = db.fixed[type] || [];
+  const sorted = entries.sort((a,b)=>(a.billingDay||99)-(b.billingDay||99));
+  return `<div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>שם</th><th>סכום</th><th>קטגוריה</th><th>תשלום</th><th>פעולות</th></tr></thead>
+      <tbody>
+        ${sorted.map(e=>`
+          <tr>
+            <td>${e.name}</td>
+            <td>${fmtFull(e.amount,e.currency)}</td>
+            <td>${e.category||''}</td>
+            <td>${e.isStandingOrder?e.billingDay:'חד פעמי'}</td>
+            <td><button class="btn-edt" data-action="edit-fixed" data-id="${e.id}" data-type="${type}">✏️</button> <button class="btn-del" data-action="del-fixed" data-id="${e.id}" data-type="${type}">🗑</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="add-row">
+    <div class="total-row">סה"כ: ${fmt(fixedTotal(type))}</div>
+    <button class="btn-primary" data-action="open-fixed" data-type="${type}">+ הוסף הוצאה קבועה</button>
+  </div>`;
+}
+
+function buildVariable(type) {
+  const entries = varForMonth(type, S.month, S.year);
+  const sorted = entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  return `<div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>שם</th><th>סכום</th><th>קטגוריה</th><th>תאריך</th><th>פעולות</th></tr></thead>
+      <tbody>
+        ${sorted.map(e=>`
+          <tr>
+            <td>${e.name}${e.installmentNum?` (${e.installmentNum}/${e.installmentTotal})`:''}</td>
+            <td>${fmtFull(e.amount,e.currency)}</td>
+            <td>${e.category||''}</td>
+            <td>${new Date(e.date).toLocaleDateString('he-IL')}</td>
+            <td><button class="btn-edt" data-action="edit-variable" data-id="${e.id}">✏️</button> <button class="btn-del" data-action="del-variable" data-id="${e.id}">🗑</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="add-row">
+    <div class="total-row">סה"כ: ${fmt(varTotal(type,S.month,S.year))}</div>
+    <button class="btn-primary" data-action="open-variable" data-type="${type}">+ הוסף הוצאה</button>
+  </div>`;
+}
+
+// ── Income ──────────────────────────────────────────────
+function buildInc() {
+  const m=S.month, y=S.year;
+  const pTot = incTotal('personal',m,y);
+  const fTot = incTotal('family',m,y);
+  const total = pTot + fTot;
+  return `<div class="card">
+    <div class="section-title">💰 הכנסות — ${MONTHS[m]} ${y}</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👤</div>
+        <div class="stat-label">אישי</div>
+        <div class="stat-val">${fmt(pTot)}</div>
       </div>
-      <div style="font-size:11px;color:#7b82a8;margin-top:8px">💡 רוב האנשים בוחרים ה-1 או ה-10 (יום הורדת אשראי)</div>
-    </div>
-    <div style="border-top:1px solid #252836;padding-top:14px;margin-top:4px">
-      <div style="font-size:13px;color:#c8cce0;margin-bottom:10px;font-weight:600">תקציב חודשי מוצע (ניתן לשנות מאוחר יותר)</div>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1">
-          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">👤 אישי</div>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="${obData.currency&&CURRENCIES[obData.currency]?CURRENCIES[obData.currency].symbol:'₪'} לחודש" value="${obData.monthlyBudgetP}" data-ob="budgetP" style="margin-bottom:0"/>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">🏡 משפחה</div>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="${obData.currency&&CURRENCIES[obData.currency]?CURRENCIES[obData.currency].symbol:'₪'} לחודש" value="${obData.monthlyBudgetF}" data-ob="budgetF" style="margin-bottom:0"/>
-        </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏡</div>
+        <div class="stat-label">משפחה</div>
+        <div class="stat-val">${fmt(fTot)}</div>
       </div>
-    </div>`;
-  }
-
-  if(step.id === 'cats_p') {
-    html += `<div class="ob-chips">
-      ${OB_CATS_PERSONAL.map(c=>{
-        const sel = obData.catsPersonal.includes(c);
-        return `<div class="ob-chip cat-p${sel?' selected':''}" onclick="window.obToggleCat('personal','${c.replace(/'/g,"\\'")}',this)">${c}</div>`;
-      }).join('')}
+      <div class="stat-card">
+        <div class="stat-icon">∑</div>
+        <div class="stat-label">סה"כ</div>
+        <div class="stat-val">${fmt(total)}</div>
+      </div>
     </div>
-    <div style="font-size:11px;color:#7b82a8;margin-top:8px">נבחרו: <strong style="color:#a78bfa">${obData.catsPersonal.length}</strong> קטגוריות</div>`;
-  }
+  </div>
+  <div class="card">
+    <div class="section-title">👤 הכנסות אישיות</div>
+    ${buildIncList('personal')}
+  </div>
+  <div class="card">
+    <div class="section-title">🏡 הכנסות משפחה</div>
+    ${buildIncList('family')}
+  </div>`;
+}
 
-  if(step.id === 'cats_f') {
-    html += `<div class="ob-chips">
-      ${OB_CATS_FAMILY.map(c=>{
-        const sel = obData.catsFamily.includes(c);
-        return `<div class="ob-chip cat-f${sel?' selected':''}" onclick="window.obToggleCat('family','${c.replace(/'/g,"\\'")}',this)">${c}</div>`;
-      }).join('')}
+function buildIncList(type) {
+  const entries = incForMonth(type, S.month, S.year);
+  return `<div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>שם</th><th>סכום</th><th>סוג</th><th>פעולות</th></tr></thead>
+      <tbody>
+        ${entries.map(e=>`
+          <tr>
+            <td>${e.name}</td>
+            <td>${fmtFull(e.amount,e.currency)}</td>
+            <td>${e.incomeType||''}</td>
+            <td><button class="btn-edt" data-action="edit-income" data-id="${e.id}">✏️</button> <button class="btn-del" data-action="del-income" data-id="${e.id}">🗑</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="add-row">
+    <div class="total-row">סה"כ: ${fmt(incTotal(type,S.month,S.year))}</div>
+    <button class="btn-primary" data-action="open-income" data-itype="${type}">+ הוסף הכנסה</button>
+  </div>`;
+}
+
+// ── Savings ─────────────────────────────────────────────
+function buildSavings() {
+  const scope = S.activeStype || 'personal';
+  const sym = getCurrencySymbol();
+  return `<div class="card">
+    <div class="section-title">🏦 תוכניות חיסכון</div>
+    <div class="nav" style="margin-bottom:12px;background:#1e2130;border-radius:10px;padding:4px">
+      <button class="nav-btn${scope==='personal'?' active':''}" data-action="saving-scope" data-stype="personal">👤 אישי</button>
+      <button class="nav-btn${scope==='family'?' active':''}" data-action="saving-scope" data-stype="family">🏡 משפחה</button>
     </div>
-    <div style="font-size:11px;color:#7b82a8;margin-top:8px">נבחרו: <strong style="color:#68d391">${obData.catsFamily.length}</strong> קטגוריות</div>`;
-  }
+    ${buildSavingsList(scope)}
+  </div>`;
+}
 
-  if(step.id === 'currency') {
-    html += `<div style="display:flex;flex-direction:column;gap:10px">
-      ${Object.entries(CURRENCIES).map(([k,v])=>
-        `<div class="ob-chip${obData.currency===k?' selected':''}" onclick="window.obData.currency='${k}';window.renderObStep()" style="padding:16px;border-radius:14px;display:flex;align-items:center;gap:14px;font-size:15px">
-          <span style="font-size:28px">${v.flag}</span>
-          <div><div style="font-weight:700">${v.symbol} — ${v.name}</div>
-               <div style="font-size:12px;color:#7b82a8">כל הסכומים יוצגו ב-${v.name}</div></div>
-          ${obData.currency===k?'<span style
+function buildSavingsList(scope) {
+  const plans = (db.savings||[]).filter(s=>s.stype===scope);
+  const monthlyTotal = plans.reduce((s,p)=>s+p.monthly,0);
+  return `<div class="grid2">
+    <div class="stat-card">
+      <div class="stat-icon">📅</div>
+      <div class="stat-label">חיסכון חודשי</div>
+      <div class="stat-val">${fmt(monthlyTotal)}</div>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>שם</th><th>חודשי</th><th>יעד</th><th>תאריכים</th><th>פעולות</th></tr></thead>
+      <tbody>
+        ${plans.map(p=>`
+          <tr>
+            <td>${p.name}</td>
+            <td>${fmt(p.monthly)}</td>
+            <td>${fmt(p.target)}</td>
+            <td>${new Date(p.startDate).toLocaleDateString('he-IL')} ${p.endDate?`עד ${new Date(p.endDate).toLocaleDateString('he-IL')}`:''}</td>
+            <td><button class="btn-edt" data-action="edit-saving" data-id="${p.id}">✏️</button> <button class="btn-del" data-action="del-saving" data-id="${p.id}">🗑</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="add-row">
+    <div class="total-row">סה"כ חודשי: ${fmt(monthlyTotal)}</div>
+    <button class="btn-primary" data-action="open-saving" data-stype="${scope}">+ הוסף תוכנית</button>
+  </div>`;
+}
+
+// ── Tasks ───────────────────────────────────────────────
+function getTaskKey(m,y){return `${y}-${m}`;}
+function buildTasks() {
+  const m=S.month, y=S.year;
+  const key = getTaskKey(m,y);
+  const tasks = db.tasks[key]?.tasks || [];
+  const goals = db.tasks[key]?.goals || [];
+  const prevKey = getTaskKey(m-1,y);
+  const prevTasks = (db.tasks[prevKey]?.tasks || []).filter(t=>!t.done&&!t.rolledOver);
+  const prevGoals = (db.tasks[prevKey]?.goals || []).filter(g=>!g.done&&!g.rolledOver);
+  return `<div class="card">
+    <div class="section-title">✅ משימות — ${MONTHS[m]} ${y}</div>
+    ${buildTaskList('tasks', tasks, key)}
+  </div>
+  <div class="card">
+    <div class="section-title">🎯 מ
