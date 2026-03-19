@@ -561,7 +561,7 @@ const today = new Date();
 // ── App State ────────────────────────────────────────────
 let currentUser = null;
 const ADMIN_EMAIL = 'eliran1456@gmail.com';
-const isAdmin = () => currentUser && currentUser.email === ADMIN_EMAIL;
+const isAdmin = () => currentUser && (currentUser.email === ADMIN_EMAIL || (appConfig.admins||[]).includes(currentUser.email));
 window.isAdmin = isAdmin;
 let db = null;
 let syncStatus = 'syncing';
@@ -1139,8 +1139,7 @@ function buildApp(){
     :S.tab==='income'?buildInc()
     :S.tab==='report'?buildReport()
     :S.tab==='admin'?buildAdmin()
-    :S.tab==='simulation'?buildSimulationTab()
-    :S.tab==='liquidity'?buildLiquidityTab()
+    :S.tab==='annual'?buildAnnualView()
     :S.tab==='cfo'?buildCFOTab()
     :S.tab==='freedom'?buildFreedomTab()
     :buildSettings())+
@@ -1837,8 +1836,7 @@ function buildMobileBottomNav(){
     ['cashflow','💸','תזרים'],
     ['report','📊','דוחות'],
     ['ai','🤖','AI'],
-    ['simulation','📊','סימולציה'],
-    ['liquidity','🔍','סוכן'],
+    ['annual','📅','מבט שנתי'],
     ['cfo','💬','CFO'],
     ['freedom','🎯','חופש'],
     ['settings','⚙️','הגדרות'],
@@ -1890,8 +1888,7 @@ function getTabLabels() {
     ['report','📊', tabLabel('report','דוחות')],
     ['ai','🤖', tabLabel('ai','AI')],
     ['settings','⚙️', tabLabel('settings','הגדרות')],
-    ['simulation','📊', 'סימולציה'],
-    ['liquidity','🔍', 'סוכן'],
+    ['annual','📅', 'מבט שנתי'],
     ['cfo','💬', 'CFO'],
     ['freedom','🎯', 'חופש'],
   ];
@@ -3492,13 +3489,30 @@ function buildAdmin() {
     {key:'textColor',   label:'טקסט',     def:'#e8eaf0'},
   ];
   const TEXT_KEYS = [
-    {key:'app_title',      label:'שם האפליקציה', def:'תקציב'},
-    {key:'app_subtitle',   label:'תת-כותרת',     def:'ניהול חכם של הכסף שלך'},
-    {key:'footer_copy',    label:'טקסט Footer',  def:'Eliran Michaeli · כל הזכויות שמורות'},
-    {key:'income_title_personal',  label:'כותרת הכנסות (אישי)',   def:'💵 הכנסות'},
-    {key:'income_title_family',    label:'כותרת הכנסות (משפחה)', def:'💵 הכנסות'},
-    {key:'exp_fixed_title_personal',label:'כותרת קבועות (אישי)',  def:'📌 קבועות'},
-    {key:'exp_fixed_title_family',  label:'כותרת קבועות (משפחה)',def:'📌 קבועות'},
+    {group:'כללי'},
+    {key:'app_title',      label:'שם האפליקציה',      def:'תקציב'},
+    {key:'app_subtitle',   label:'תת-כותרת ראשית',    def:'ניהול חכם של הכסף שלך'},
+    {key:'footer_copy',    label:'טקסט Footer',        def:'Eliran Michaeli · כל הזכויות שמורות'},
+    {group:'אישי (בן/בת זוג 1)'},
+    {key:'income_title_personal',        label:'כותרת הכנסות',        def:'💵 הכנסות'},
+    {key:'exp_fixed_title_personal',     label:'כותרת הוצאות קבועות', def:'📌 קבועות'},
+    {key:'exp_var_title_personal',       label:'כותרת הוצאות משתנות', def:'📊 משתנות'},
+    {key:'tab_personal_name',            label:'שם הלשונית',           def:'חשבון אישי'},
+    {group:'אישי (בן/בת זוג 2)'},
+    {key:'income_title_personal2',       label:'כותרת הכנסות',        def:'💵 הכנסות'},
+    {key:'exp_fixed_title_personal2',    label:'כותרת הוצאות קבועות', def:'📌 קבועות'},
+    {key:'exp_var_title_personal2',      label:'כותרת הוצאות משתנות', def:'📊 משתנות'},
+    {key:'tab_personal2_name',           label:'שם הלשונית',           def:'חשבון 2'},
+    {group:'משפחה'},
+    {key:'income_title_family',          label:'כותרת הכנסות',         def:'💵 הכנסות'},
+    {key:'exp_fixed_title_family',       label:'כותרת הוצאות קבועות',  def:'📌 קבועות'},
+    {key:'exp_var_title_family',         label:'כותרת הוצאות משתנות',  def:'📊 משתנות'},
+    {key:'tab_family_name',              label:'שם הלשונית',            def:'חשבון משפחתי'},
+    {group:'חיסכון ותזרים'},
+    {key:'savings_title',                label:'כותרת דף חיסכון',      def:'🏦 תוכניות חיסכון'},
+    {key:'cashflow_title',               label:'כותרת דף תזרים',       def:'💸 תזרים מזומנים'},
+    {key:'tab_savings_name',             label:'שם לשונית חיסכון',     def:'חיסכון'},
+    {key:'tab_cashflow_name',            label:'שם לשונית תזרים',      def:'תזרים'},
   ];
 
   return `<div style="display:flex;flex-direction:column;gap:14px">
@@ -3611,13 +3625,38 @@ function buildAdmin() {
     <!-- ════ SECTION: Text Editor ════ -->
     <div class="card">
       <div class="section-title" style="margin-bottom:12px">✏️ עריכת טקסטים</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${TEXT_KEYS.map(t=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:#17171B;border-radius:8px">
-            <span style="font-size:12px;color:#7b82a8;width:160px;flex-shrink:0">${t.label}</span>
-            <input type="text" value="${(cfg.texts&&cfg.texts[t.key])||t.def}" data-action="update-text" data-text-key="${t.key}" data-text-def="${t.def}"
-              style="flex:1;background:#252836;border:1px solid #3a3f5c;border-radius:6px;color:#e8eaf0;font-size:13px;padding:6px 10px;font-family:Heebo,sans-serif"/>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${TEXT_KEYS.map(t=> t.group
+          ? `<div style="font-size:11px;font-weight:700;color:#0DD880;padding:10px 4px 4px;letter-spacing:.06em;border-top:1px solid rgba(255,255,255,.05);margin-top:4px">${t.group}</div>`
+          : `<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#17171B;border-radius:8px">
+              <span style="font-size:11px;color:#7b82a8;width:150px;flex-shrink:0">${t.label}</span>
+              <input type="text" value="${(cfg.texts&&cfg.texts[t.key])||t.def}" data-action="update-text" data-text-key="${t.key}" data-text-def="${t.def}"
+                style="flex:1;background:#252836;border:1px solid #3a3f5c;border-radius:6px;color:#e8eaf0;font-size:13px;padding:6px 10px;font-family:Heebo,sans-serif"/>
+            </div>`
+        ).join('')}
+      </div>
+    </div>
+
+    <!-- ════ SECTION: Admins Management ════ -->
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px">👑 ניהול מנהלים</div>
+      <div style="font-size:12px;color:#7b82a8;margin-bottom:12px">
+        הענק הרשאות מנהל לפי כתובת מייל. מנהלים יכולים לערוך טקסטים, לשנות הגדרות ולנהל משתמשים.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        ${(appConfig.admins||[ADMIN_EMAIL]).map(email=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#17171B;border-radius:8px">
+            <span style="font-size:14px">👑</span>
+            <span style="flex:1;font-size:13px;color:#e8eaf0">${email}</span>
+            ${email===ADMIN_EMAIL
+              ?'<span style="font-size:10px;color:#0DD880;background:rgba(13,216,128,.12);padding:2px 8px;border-radius:20px">ראשי</span>'
+              :`<button data-action="admin-remove-admin" data-email="${email}" class="btn-del" style="font-size:11px;padding:4px 10px">הסר</button>`}
           </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="newAdminEmail" type="email" placeholder="מייל משתמש רשום..."
+          style="flex:1;background:#252836;border:1px solid #3a3f5c;border-radius:8px;color:#e8eaf0;font-size:13px;padding:9px 12px;font-family:Heebo,sans-serif;outline:none;direction:ltr"/>
+        <button class="btn btn-primary" data-action="admin-add-admin" style="padding:9px 16px;white-space:nowrap">+ הוסף מנהל</button>
       </div>
     </div>
 
@@ -3896,11 +3935,19 @@ function attach(){
       }
       // ── CMS: Update text (input) ──
       const textInp = e.target.closest('[data-action="update-text"]');
-      if(textInp && isAdmin()) {
+      if(textInp && isAdmin() && e.type === 'change') {
         const key = textInp.dataset.textKey;
-        if(!appConfig.texts) appConfig.texts={};
-        appConfig.texts[key] = textInp.value || textInp.dataset.textDef;
-        await saveAppConfig(); showToast('✅ טקסט עודכן'); return;
+        const newVal = textInp.value || textInp.dataset.textDef;
+        showAdminConfirmDialog(
+          `האם לעדכן את "\n${newVal}"?`,
+          async () => {
+            if(!appConfig.texts) appConfig.texts={};
+            appConfig.texts[key] = newVal;
+            await saveAppConfig(); showToast('✅ טקסט עודכן');
+          },
+          () => { textInp.value = (appConfig.texts&&appConfig.texts[key]) || textInp.dataset.textDef; }
+        );
+        return;
       }
     });
   }
@@ -3917,7 +3964,7 @@ function attach(){
       if(adminEl && isAdmin()) {
         e.stopPropagation();
         const key = adminEl.dataset.adminKey;
-        const current = appConfig[key] || adminEl.dataset.adminDefault || '';
+        const current = appConfig.texts?.[key] || adminEl.dataset.adminDefault || '';
         // Build inline editor
         const editor = document.createElement('div');
         editor.className = 'admin-inline-editor';
@@ -3926,7 +3973,7 @@ function attach(){
         inputEl.value = current;
         if(isMultiline) { inputEl.rows = 3; inputEl.style.resize = 'none'; }
         const saveBtn = document.createElement('button');
-        saveBtn.textContent = '✓';
+        saveBtn.textContent = '✓ שמור';
         saveBtn.className = 'btn btn-primary';
         saveBtn.style.cssText = 'padding:4px 10px;font-size:12px;flex-shrink:0';
         const cancelBtn = document.createElement('button');
@@ -3939,10 +3986,20 @@ function attach(){
         adminEl.replaceWith(editor);
         inputEl.focus();
         saveBtn.onclick = async () => {
-          appConfig[key] = inputEl.value;
-          await saveAppConfig();
-          showToast('✅ עודכן');
-          render();
+          const newVal = inputEl.value.trim();
+          if(!newVal) { showToast('❌ ערך לא יכול להיות ריק'); return; }
+          // Confirmation dialog
+          showAdminConfirmDialog(
+            `האם לעדכן את "${key}" ל:\n"${newVal}"?`,
+            async () => {
+              if(!appConfig.texts) appConfig.texts = {};
+              appConfig.texts[key] = newVal;
+              await saveAppConfig();
+              showToast('✅ טקסט עודכן בהצלחה');
+              render();
+            },
+            () => render()
+          );
         };
         cancelBtn.onclick = () => render();
         inputEl.addEventListener('keydown', e2 => {
@@ -4197,6 +4254,41 @@ function attach(){
       }
       if(a==='refresh-admin'){
         await loadAdminData();render();showToast('🔄 רושם עודכן');return;
+      }
+      if(a==='admin-add-admin'){
+        if(!isAdmin())return;
+        const emailEl=document.getElementById('newAdminEmail');
+        const email=(emailEl?.value||'').trim().toLowerCase();
+        if(!email||!email.includes('@')){showToast('❌ נא להזין מייל תקין');return;}
+        // Verify user exists
+        const found=adminData.find(u=>u.email===email);
+        if(!found){showToast('❌ משתמש עם מייל זה לא נמצא במערכת');return;}
+        if(!appConfig.admins) appConfig.admins=[ADMIN_EMAIL];
+        if(appConfig.admins.includes(email)){showToast('⚠️ המשתמש כבר מנהל');return;}
+        showAdminConfirmDialog(`להענות הרשאות מנהל ל-${email}?`, async()=>{
+          appConfig.admins.push(email);
+          await saveAppConfig();
+          await setDoc(doc(firestore,'usersMeta',found.uid),{isAdmin:true},{merge:true});
+          if(emailEl) emailEl.value='';
+          showToast('✅ מנהל נוסף: '+email);
+          render();
+        });
+        return;
+      }
+      if(a==='admin-remove-admin'){
+        if(!isAdmin())return;
+        const email=b.dataset.email;
+        if(email===ADMIN_EMAIL){showToast('❌ לא ניתן להסיר את המנהל הראשי');return;}
+        showAdminConfirmDialog(`להסיר הרשאות מנהל מ-${email}?`, async()=>{
+          if(!appConfig.admins) return;
+          appConfig.admins=appConfig.admins.filter(e=>e!==email);
+          await saveAppConfig();
+          const found=adminData.find(u=>u.email===email);
+          if(found) await setDoc(doc(firestore,'usersMeta',found.uid),{isAdmin:false},{merge:true});
+          showToast('✅ הרשאות הוסרו: '+email);
+          render();
+        });
+        return;
       }
       // ── CMS: Reset theme (button) ──
       if(a==='reset-theme'){
@@ -5027,11 +5119,11 @@ async function llSendCFOMessage(text) {
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/.netlify/functions/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: systemPrompt,
         messages,
@@ -5041,7 +5133,7 @@ async function llSendCFOMessage(text) {
     const reply = data.content?.[0]?.text || 'שגיאה — נסה שוב';
     LL.cfo.messages.push({ role: 'ai', text: reply });
   } catch(e) {
-    LL.cfo.messages.push({ role: 'ai', text: '❌ שגיאת חיבור — ודא שה-API key מוגדר' });
+    LL.cfo.messages.push({ role: 'ai', text: '❌ שגיאה בתקשורת עם השרת. נסה שוב.' });
   }
 
   LL.cfo.loading = false;
@@ -5353,6 +5445,433 @@ window.llCalcExpenseTime = function() {
 
 // ══════════════════════════════════════════════════════════════
 // END LOGIC LAYER
+// ══════════════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN CONFIRM DIALOG (shared)
+// ══════════════════════════════════════════════════════════════
+function showAdminConfirmDialog(message, onConfirm, onCancel) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#111113;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:26px;max-width:380px;width:100%;font-family:Heebo,sans-serif;direction:rtl';
+  box.innerHTML = `
+    <div style="font-size:20px;margin-bottom:10px;text-align:center">✏️</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px;text-align:center">אישור עריכה</div>
+    <div style="font-size:13px;color:#9ca3af;line-height:1.6;text-align:center;margin-bottom:20px;white-space:pre-line">${message}</div>
+    <div style="display:flex;gap:10px">
+      <button id="confirmYes" style="flex:1;padding:12px;background:#0DD880;border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">✓ כן, בצע</button>
+      <button id="confirmNo"  style="flex:1;padding:12px;background:#17171B;border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:14px;cursor:pointer;font-family:Heebo,sans-serif">ביטול</button>
+    </div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  box.querySelector('#confirmYes').onclick = () => { overlay.remove(); onConfirm && onConfirm(); };
+  box.querySelector('#confirmNo').onclick  = () => { overlay.remove(); onCancel && onCancel(); };
+  overlay.onclick = (e) => { if(e.target===overlay){ overlay.remove(); onCancel && onCancel(); } };
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODULE: מבט שנתי — Annual View
+// ══════════════════════════════════════════════════════════════
+
+// State
+let AV = {
+  year: new Date().getFullYear(),
+  scope: 'personal',   // personal | personal2 | family
+  events: [],          // SpecialEvent[]
+  editEvent: null,
+  showEventForm: false,
+  formData: { title:'', description:'', month: new Date().getMonth(), estimatedCost:'', category:'OTHER' },
+};
+
+const AV_CATS = {
+  HOLIDAY:   { label:'חג / חופשה', icon:'🎉' },
+  VACATION:  { label:'טיול / נסיעה', icon:'✈️' },
+  MEDICAL:   { label:'רפואה', icon:'💊' },
+  CAR:       { label:'רכב', icon:'🚗' },
+  GIFT:      { label:'מתנות', icon:'🎁' },
+  EDUCATION: { label:'חינוך / קורסים', icon:'📚' },
+  OTHER:     { label:'אחר', icon:'📌' },
+};
+
+const AV_SCOPE_LABELS = {
+  personal:  'אישי (בן/בת זוג 1)',
+  personal2: 'אישי (בן/בת זוג 2)',
+  family:    'משפחה',
+};
+
+// ── Data helpers ──────────────────────────────────────────────
+function avGetBaseBudget(scope, month, year) {
+  if(!db) return { incomePlanned: 20000, expensesPlanned: 12000 };
+  const scopeType = scope === 'family' ? 'family' : 'personal';
+  const incomePlanned  = totalInc(month, year);
+  const fixedExp = fixedTotal(scopeType);
+  const varExp   = varTotal(scopeType, month, year);
+  const expensesPlanned = fixedExp + varExp;
+  return {
+    incomePlanned:  incomePlanned  || (scope==='family' ? 8000 : 12000),
+    expensesPlanned: expensesPlanned || (scope==='family' ? 6500 : 8000),
+  };
+}
+
+function avGetEventsForMonth(month) {
+  return AV.events.filter(e => e.month === month && !e._deleted);
+}
+
+function avGetEventsCost(month) {
+  return avGetEventsForMonth(month).reduce((s,e) => s + (parseFloat(e.estimatedCost)||0), 0);
+}
+
+function avCalcMonthData(month) {
+  const base = avGetBaseBudget(AV.scope, month, AV.year);
+  const eventsCost = avGetEventsCost(month);
+  const netBase    = base.incomePlanned - base.expensesPlanned;
+  const netAfter   = netBase - eventsCost;
+  const status     = netAfter > 500 ? 'green' : netAfter > -500 ? 'yellow' : 'red';
+  return { ...base, eventsCost, netBase, netAfter, status, month };
+}
+
+function avCalcYearlySummary() {
+  let totalIncome=0, totalExpenses=0, totalEvents=0;
+  for(let m=0;m<12;m++){
+    const d = avCalcMonthData(m);
+    totalIncome   += d.incomePlanned;
+    totalExpenses += d.expensesPlanned;
+    totalEvents   += d.eventsCost;
+  }
+  return { totalIncome, totalExpenses, totalEvents, netYearly: totalIncome - totalExpenses - totalEvents };
+}
+
+function avGenSavingSuggestions() {
+  const suggestions = [];
+  const now = new Date();
+  const curMonth = now.getMonth();
+  AV.events.filter(e=>!e._deleted && (parseFloat(e.estimatedCost)||0)>0).forEach(ev => {
+    const targetMonth = ev.month;
+    const cost = parseFloat(ev.estimatedCost)||0;
+    let availableMonths = targetMonth - curMonth;
+    if(availableMonths <= 0) availableMonths = 12 + availableMonths;
+    if(availableMonths <= 0) availableMonths = 1;
+    const monthly = Math.ceil(cost / availableMonths);
+    const cat = AV_CATS[ev.category]||AV_CATS.OTHER;
+    suggestions.push({
+      id: ev.id,
+      relatedEventId: ev.id,
+      eventTitle: ev.title,
+      month: targetMonth,
+      totalSavingNeeded: cost,
+      monthlySavingAmount: monthly,
+      availableMonths,
+      message: `כדי לממן את "${ev.title}" בעלות ${llFmt(cost)}, מומלץ לחסוך ${llFmt(monthly)} לחודש בין ${MONTHS[curMonth]} ל${MONTHS[targetMonth]} (${availableMonths} חודשים).`,
+      icon: cat.icon,
+    });
+  });
+  return suggestions;
+}
+
+// ── Save/Load events from db ──────────────────────────────────
+function avLoadEvents() {
+  if(!db) return;
+  AV.events = (db.annualEvents||[]).filter(e=>e.year===AV.year && e.scope===AV.scope);
+}
+
+async function avSaveEvents() {
+  if(!db) return;
+  if(!db.annualEvents) db.annualEvents=[];
+  // Remove old events for this year+scope, then re-add
+  db.annualEvents = [
+    ...db.annualEvents.filter(e=>!(e.year===AV.year && e.scope===AV.scope)),
+    ...AV.events.filter(e=>!e._deleted),
+  ];
+  await saveDB();
+}
+
+// ── SVG Bar Chart ─────────────────────────────────────────────
+function avBuildChart() {
+  const W=340, H=110, pad=24;
+  const monthData = MONTHS.map((_,m) => avCalcMonthData(m));
+  const maxVal = Math.max(...monthData.flatMap(d=>[d.incomePlanned, d.expensesPlanned+d.eventsCost]), 1);
+  const barW = Math.floor((W - pad*2) / 12) - 2;
+
+  const bars = monthData.map((d,i) => {
+    const x = pad + i * ((W-pad*2)/12);
+    const incH  = Math.round((d.incomePlanned / maxVal) * (H-10));
+    const expH  = Math.round(((d.expensesPlanned+d.eventsCost) / maxVal) * (H-10));
+    const col   = d.status==='green'?'#0DD880':d.status==='yellow'?'#f6ad55':'#f87171';
+    return `
+      <rect x="${x}" y="${H-incH}" width="${Math.floor(barW/2)-1}" height="${incH}" fill="#0DD88055" rx="2"/>
+      <rect x="${x+Math.floor(barW/2)}" y="${H-expH}" width="${Math.ceil(barW/2)-1}" height="${expH}" fill="${col}88" rx="2"/>`;
+  }).join('');
+
+  const labels = MONTHS.map((_,i) => {
+    const x = pad + i*((W-pad*2)/12) + barW/2;
+    return `<text x="${x}" y="${H+14}" text-anchor="middle" font-size="8" fill="#7b82a8">${MONTHS[i].slice(0,3)}</text>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H+18}" width="100%" style="display:block">
+    ${bars}${labels}
+    <line x1="${pad}" y1="${H}" x2="${W-pad}" y2="${H}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+  </svg>`;
+}
+
+// ── Main render ───────────────────────────────────────────────
+function buildAnnualView() {
+  avLoadEvents();
+  const summary = avCalcYearlySummary();
+  const suggestions = avGenSavingSuggestions();
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const hasPartner = p.accountType==='family' && p.partnerName;
+  const scopes = [
+    { id:'personal',  label: hasPartner ? (p.name||'אישי 1') : 'אישי' },
+    ...(hasPartner ? [{id:'personal2', label: p.partnerName}] : []),
+    { id:'family', label:'משפחה' },
+  ];
+  const sym = db ? getCurrencySymbol() : '₪';
+
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- ─── Header + filters ─── -->
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:16px;font-weight:800">📅 מבט שנתי</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${[AV.year-1, AV.year, AV.year+1].map(y=>`
+            <button onclick="AV.year=${y};render()" style="padding:5px 12px;border-radius:8px;border:1px solid ${AV.year===y?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.year===y?'rgba(13,216,128,.15)':'#17171B'};color:${AV.year===y?'#0DD880':'#7b82a8'};font-size:13px;font-family:Heebo,sans-serif;cursor:pointer">${y}</button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Scope selector -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        ${scopes.map(s=>`
+          <button onclick="AV.scope='${s.id}';render()" style="padding:7px 14px;border-radius:20px;border:1px solid ${AV.scope===s.id?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.scope===s.id?'rgba(13,216,128,.15)':'transparent'};color:${AV.scope===s.id?'#0DD880':'#7b82a8'};font-size:12px;font-weight:${AV.scope===s.id?700:400};font-family:Heebo,sans-serif;cursor:pointer">${s.label}</button>`).join('')}
+      </div>
+
+      <!-- Year summary -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        ${[
+          { label:'הכנסה שנתית',     val:summary.totalIncome,   color:'#0DD880' },
+          { label:'הוצאות שוטפות',   val:summary.totalExpenses, color:'#f87171' },
+          { label:'אירועים מיוחדים', val:summary.totalEvents,   color:'#f6ad55' },
+          { label:'נטו שנתי',        val:summary.netYearly,     color:summary.netYearly>=0?'#0DD880':'#f87171' },
+        ].map(s=>`
+          <div style="background:#17171B;border-radius:10px;padding:10px 12px">
+            <div style="font-size:10px;color:#7b82a8;margin-bottom:3px">${s.label}</div>
+            <div style="font-size:16px;font-weight:800;color:${s.color}">${s.val>=0?'':'−'}${sym}${Math.abs(Math.round(s.val)).toLocaleString('he-IL')}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- ─── Chart ─── -->
+    <div class="card">
+      <div class="section-title" style="margin-bottom:8px">📊 תרשים שנתי — הכנסות לעומת הוצאות</div>
+      ${avBuildChart()}
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:11px;color:#7b82a8;justify-content:center">
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#0DD88055;border-radius:2px"></span>הכנסה</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#f8717188;border-radius:2px"></span>הוצאות</span>
+      </div>
+    </div>
+
+    <!-- ─── Monthly grid ─── -->
+    <div class="card">
+      <div class="section-title" style="margin-bottom:10px">🗓 טבלת חודשים</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px">
+          <thead><tr style="color:#7b82a8;font-size:11px">
+            <th style="padding:8px;text-align:right;white-space:nowrap">חודש</th>
+            <th style="padding:8px;text-align:left;white-space:nowrap">הכנסה</th>
+            <th style="padding:8px;text-align:left;white-space:nowrap">הוצאות</th>
+            <th style="padding:8px;text-align:left;white-space:nowrap">אירועים</th>
+            <th style="padding:8px;text-align:left;white-space:nowrap">נטו</th>
+            <th style="padding:8px;text-align:center">סטטוס</th>
+          </tr></thead>
+          <tbody>
+            ${MONTHS.map((m,i) => {
+              const d = avCalcMonthData(i);
+              const events = avGetEventsForMonth(i);
+              const statusDot = d.status==='green'?'🟢':d.status==='yellow'?'🟡':'🔴';
+              const statusBg  = d.status==='green'?'rgba(13,216,128,.06)':d.status==='yellow'?'rgba(246,173,85,.06)':'rgba(239,68,68,.06)';
+              return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);background:${statusBg};cursor:pointer"
+                          onclick="S.month=${i};S.tab='cashflow';render()">
+                <td style="padding:8px;font-weight:600;white-space:nowrap">
+                  ${m}
+                  ${events.length?`<span style="font-size:10px;color:#f6ad55;margin-right:4px">${events.length} אירוע</span>`:''}
+                </td>
+                <td style="padding:8px;color:#0DD880;font-weight:600;text-align:left">${sym}${Math.round(d.incomePlanned).toLocaleString('he-IL')}</td>
+                <td style="padding:8px;color:#f87171;text-align:left">${sym}${Math.round(d.expensesPlanned).toLocaleString('he-IL')}</td>
+                <td style="padding:8px;color:#f6ad55;text-align:left">${d.eventsCost?sym+Math.round(d.eventsCost).toLocaleString('he-IL'):'—'}</td>
+                <td style="padding:8px;font-weight:700;color:${d.netAfter>=0?'#0DD880':'#f87171'};text-align:left">
+                  ${d.netAfter>=0?'':'-'}${sym}${Math.abs(Math.round(d.netAfter)).toLocaleString('he-IL')}
+                </td>
+                <td style="padding:8px;text-align:center;font-size:14px">${statusDot}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── Special Events ─── -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <button onclick="AV.showEventForm=true;AV.editEvent=null;AV.formData={title:'',description:'',month:new Date().getMonth(),estimatedCost:'',category:'OTHER'};render()"
+                style="padding:7px 14px;background:rgba(13,216,128,.12);border:1px solid rgba(13,216,128,.3);border-radius:8px;color:#0DD880;font-size:13px;font-weight:600;cursor:pointer;font-family:Heebo,sans-serif">+ הוסף אירוע</button>
+        <div class="section-title" style="margin:0">🎯 אירועים מיוחדים</div>
+      </div>
+
+      ${AV.showEventForm ? avBuildEventForm() : ''}
+
+      ${AV.events.filter(e=>!e._deleted).length === 0 && !AV.showEventForm ? `
+        <div class="empty" style="padding:24px 0">
+          <div style="font-size:28px;margin-bottom:8px">📅</div>
+          <div>אין אירועים מיוחדים לשנה זו</div>
+          <div style="font-size:12px;margin-top:4px">הוסף חופשה, ביטוח שנתי, חגים וכו׳</div>
+        </div>` :
+        `<div style="display:flex;flex-direction:column;gap:8px">
+          ${AV.events.filter(e=>!e._deleted).sort((a,b)=>a.month-b.month).map(ev => {
+            const cat = AV_CATS[ev.category]||AV_CATS.OTHER;
+            return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#17171B;border-radius:10px">
+              <div style="width:40px;height:40px;border-radius:10px;background:#111113;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${cat.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700">${ev.title}</div>
+                <div style="font-size:11px;color:#7b82a8;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+                  <span>${MONTHS[ev.month]} ${AV.year}</span>
+                  <span>${cat.label}</span>
+                  ${ev.description?`<span style="color:#9ca3af">${ev.description}</span>`:''}
+                </div>
+              </div>
+              <div style="text-align:left;flex-shrink:0">
+                <div style="font-size:15px;font-weight:800;color:#f6ad55">${sym}${Math.round(parseFloat(ev.estimatedCost)||0).toLocaleString('he-IL')}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                <button onclick="avEditEvent('${ev.id}')" style="padding:4px 8px;background:rgba(13,216,128,.12);border:1px solid rgba(13,216,128,.25);border-radius:6px;color:#0DD880;font-size:11px;cursor:pointer;font-family:Heebo,sans-serif">✏️</button>
+                <button onclick="avDeleteEvent('${ev.id}')" style="padding:4px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:6px;color:#f87171;font-size:11px;cursor:pointer;font-family:Heebo,sans-serif">🗑</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`}
+    </div>
+
+    <!-- ─── Saving Suggestions ─── -->
+    ${suggestions.length ? `
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px">💡 המלצות חיסכון חכמות</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${suggestions.map(s=>`
+          <div style="background:rgba(246,173,85,.07);border:1px solid rgba(246,173,85,.2);border-radius:12px;padding:14px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:20px;flex-shrink:0">${s.icon}</span>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:700;color:#f6ad55;margin-bottom:4px">${s.eventTitle}</div>
+                <div style="font-size:12px;color:#c8cce0;line-height:1.6">${s.message}</div>
+                <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+                  <span style="background:rgba(13,216,128,.1);border-radius:20px;padding:3px 10px;font-size:11px;color:#0DD880;font-weight:600">
+                    ${sym}${Math.round(s.monthlySavingAmount).toLocaleString('he-IL')} / חודש
+                  </span>
+                  <span style="background:#17171B;border-radius:20px;padding:3px 10px;font-size:11px;color:#7b82a8">
+                    ${s.availableMonths} חודשים
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+  </div>`;
+}
+
+function avBuildEventForm() {
+  const f = AV.formData;
+  const sym = db ? getCurrencySymbol() : '₪';
+  const isEdit = !!AV.editEvent;
+  return `
+  <div style="background:rgba(13,216,128,.05);border:1px solid rgba(13,216,128,.2);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:700;margin-bottom:14px">${isEdit ? '✏️ עריכת אירוע' : '+ אירוע חדש'}</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="avTitle" value="${f.title||''}" placeholder="שם האירוע (למשל: חופשת פסח)"
+        style="background:#17171B;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e8eaf0;font-size:14px;padding:10px 12px;font-family:Heebo,sans-serif;outline:none;width:100%"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:5px">חודש</div>
+          <select id="avMonth" style="width:100%;background:#17171B;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e8eaf0;font-size:13px;padding:9px 10px;font-family:Heebo,sans-serif;outline:none">
+            ${MONTHS.map((m,i)=>`<option value="${i}" ${f.month===i?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:5px">עלות משוערת (${sym})</div>
+          <input id="avCost" type="number" value="${f.estimatedCost||''}" placeholder="0"
+            style="width:100%;background:#17171B;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e8eaf0;font-size:14px;padding:9px 12px;font-family:Heebo,sans-serif;outline:none;direction:ltr"/>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#7b82a8;margin-bottom:5px">קטגוריה</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${Object.entries(AV_CATS).map(([id,cat])=>`
+            <button onclick="AV.formData.category='${id}';document.querySelectorAll('.av-cat-btn').forEach(b=>b.style.background='transparent');this.style.background='rgba(13,216,128,.15)'"
+              class="av-cat-btn" style="padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:${f.category===id?'rgba(13,216,128,.15)':'transparent'};color:${f.category===id?'#0DD880':'#7b82a8'};font-size:12px;cursor:pointer;font-family:Heebo,sans-serif">${cat.icon} ${cat.label}</button>`).join('')}
+        </div>
+      </div>
+      <input id="avDesc" value="${f.description||''}" placeholder="תיאור קצר (אופציונלי)"
+        style="background:#17171B;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e8eaf0;font-size:13px;padding:9px 12px;font-family:Heebo,sans-serif;outline:none;width:100%"/>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="AV.showEventForm=false;AV.editEvent=null;render()"
+          style="padding:9px 16px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#7b82a8;font-size:13px;cursor:pointer;font-family:Heebo,sans-serif">ביטול</button>
+        <button onclick="avSaveEvent()"
+          style="padding:9px 18px;background:#0DD880;border:none;border-radius:8px;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">${isEdit ? 'עדכן' : 'הוסף אירוע'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.avSaveEvent = async function() {
+  const title = document.getElementById('avTitle')?.value?.trim();
+  const month = parseInt(document.getElementById('avMonth')?.value ?? AV.formData.month);
+  const cost  = parseFloat(document.getElementById('avCost')?.value)||0;
+  const desc  = document.getElementById('avDesc')?.value?.trim()||'';
+  if(!title){ showToast('❌ נא להזין שם לאירוע'); return; }
+  const eventData = {
+    id:           AV.editEvent || ('ev-'+Date.now()),
+    title, month, estimatedCost: cost, description: desc,
+    category:     AV.formData.category || 'OTHER',
+    year:         AV.year,
+    scope:        AV.scope,
+  };
+  if(AV.editEvent) {
+    const idx = AV.events.findIndex(e=>e.id===AV.editEvent);
+    if(idx>=0) AV.events[idx] = eventData;
+  } else {
+    AV.events.push(eventData);
+  }
+  AV.showEventForm = false;
+  AV.editEvent = null;
+  await avSaveEvents();
+  render();
+  showToast(AV.editEvent ? '✅ אירוע עודכן' : '✅ אירוע נוסף');
+};
+
+window.avEditEvent = function(id) {
+  const ev = AV.events.find(e=>e.id===id);
+  if(!ev) return;
+  AV.editEvent = id;
+  AV.formData = { title: ev.title, description: ev.description||'', month: ev.month, estimatedCost: ev.estimatedCost||'', category: ev.category||'OTHER' };
+  AV.showEventForm = true;
+  render();
+};
+
+window.avDeleteEvent = function(id) {
+  const ev = AV.events.find(e=>e.id===id);
+  if(!ev) return;
+  showAdminConfirmDialog(`למחוק את האירוע "${ev.title}"?`, async()=>{
+    AV.events = AV.events.filter(e=>e.id!==id);
+    await avSaveEvents();
+    render();
+    showToast('🗑 אירוע נמחק');
+  });
+};
+
+// ══════════════════════════════════════════════════════════════
+// END ANNUAL VIEW MODULE
 // ══════════════════════════════════════════════════════════════
 
 // Wire landing buttons immediately (DOM already parsed at this point)
