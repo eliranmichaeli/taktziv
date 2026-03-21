@@ -2032,7 +2032,6 @@ function getTabLabels() {
       ...(hasPartner ? [['personal2','◯', tabLabel('personal2', name2)]] : []),
       ['family','⌂', tabLabel('family','חשבון משפחתי')],
     ] : []),
-    ['income','↑', tabLabel('income','הכנסות')],
     ['cashflow','⇌', tabLabel('cashflow','תזרים')],
     ['savings','◈', tabLabel('savings','חיסכון')],
     ['report','▦', tabLabel('report','דוחות')],
@@ -4064,8 +4063,14 @@ function attach(){
   if(_appEl && !_appEl._changeDelegated) {
     _appEl._changeDelegated = true;
     _appEl.addEventListener('change', async function(e) {
-      // When a modal is open, only allow the 'ft' select and excel category selects
-      if(S.modal && e.target.id !== 'ft' && !e.target.classList.contains('excel-cat-sel') && !e.target.dataset.idx) return;
+      // When a modal is open, block ALL change events except ft (type selector) and excel
+      if(S.modal) {
+        if(e.target.id === 'ft') {
+          const fc=document.getElementById('fc');
+          if(fc) fc.innerHTML=cats(e.target.value).map(c=>`<option>${c}</option>`).join('');
+        }
+        return;
+      }
       const ys = e.target.closest('#ySel');
       if(ys){ S.year=parseInt(ys.value); render(); return; }
       const startDay = e.target.closest('[data-action="set-budget-start-day"]');
@@ -4089,11 +4094,7 @@ function attach(){
       if(partnerCur){ db.settings.partnerCurrency=partnerCur.dataset.cur; await saveDB(); render(); return; }
       const currencyBtn = e.target.closest('[data-action="set-currency"]');
       if(currencyBtn){ db.settings.currency=currencyBtn.dataset.cur; await saveDB(); render(); showToast('💱 מטבע שונה'); return; }
-      // ft (expense type select) → update fc categories
-      if(e.target.id==='ft'){
-        const fc=document.getElementById('fc');
-        if(fc) fc.innerHTML=cats(e.target.value).map(c=>`<option>${c}</option>`).join('');
-      }
+      // ft handler moved into modal guard above
       // ── CMS: Rename tab (change event on text input) ──
       const renameEl = e.target.closest('[data-action="rename-tab"]');
       if(renameEl && isAdmin()) {
@@ -4159,6 +4160,43 @@ function attach(){
   if(_appEl && !_appEl._delegated) {
     _appEl._delegated = true;
     _appEl.addEventListener('click', async function(e) {
+      // ── Language modal ──
+      if(e.target.closest('[data-action="open-lang-modal"]')) {
+        openLangModal();
+        return;
+      }
+      // ── Annual View (מבט שנתי) actions ──
+      const avScopeBtn = e.target.closest('[data-action="av-scope"]');
+      if(avScopeBtn) { AV.scope = avScopeBtn.dataset.scope; render(); return; }
+      const avYearBtn = e.target.closest('[data-action="av-year"]');
+      if(avYearBtn) { AV.year = parseInt(avYearBtn.dataset.year); render(); return; }
+      if(e.target.closest('[data-action="av-open-event-form"]')) {
+        AV.showEventForm = true;
+        AV.editEvent = null;
+        AV.formData = {title:'', description:'', month: new Date().getMonth(), estimatedCost:'', category:'OTHER'};
+        render();
+        return;
+      }
+      // ── Freedom tab actions ──
+      if(e.target.closest('[data-action="freedom-understood"]')) {
+        if(!window._freedomState) window._freedomState = {showIntro:true, scope:'personal'};
+        window._freedomState.showIntro = false;
+        render();
+        return;
+      }
+      if(e.target.closest('[data-action="freedom-show-intro"]')) {
+        if(!window._freedomState) window._freedomState = {showIntro:true, scope:'personal'};
+        window._freedomState.showIntro = true;
+        render();
+        return;
+      }
+      const freedomScope = e.target.closest('[data-action="freedom-scope"]');
+      if(freedomScope) {
+        if(!window._freedomState) window._freedomState = {showIntro:false, scope:'personal'};
+        window._freedomState.scope = freedomScope.dataset.scope;
+        render();
+        return;
+      }
       // ── AI Advisor suggestions ──
       const advSuggestBtn = e.target.closest('[data-adv-suggest]');
       if(advSuggestBtn) {
@@ -5546,7 +5584,7 @@ function buildFreedomTab() {
           </div>
         </div>
 
-        <button onclick="window._freedomState.showIntro=false;render()"
+        <button data-action="freedom-understood"
           style="width:100%;padding:14px;background:#0DD880;border:none;border-radius:12px;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;transition:opacity .2s"
           onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           הבנתי — עבור למחשבון
@@ -5568,19 +5606,19 @@ function buildFreedomTab() {
   return `<div style="max-width:680px;margin:0 auto">
 
     <!-- Back to intro -->
-    <button onclick="window._freedomState.showIntro=true;render()"
+    <button data-action="freedom-show-intro"
       style="background:none;border:none;color:#7b82a8;font-size:13px;cursor:pointer;font-family:'Heebo',sans-serif;padding:0 0 14px 0;display:flex;align-items:center;gap:4px">
-      → חזרה להסבר
+      ← חזרה להסבר
     </button>
 
     <!-- Scope selector -->
     ${scopes.length > 1 ? `<div style="display:flex;gap:8px;margin-bottom:16px">
-      ${scopes.map(s=>`<button onclick="window._freedomState.scope='${s.id}';render()"
+      ${scopes.map(s=>`<button data-action="freedom-scope" data-scope="${s.id}"
         style="padding:8px 18px;border-radius:20px;border:1px solid ${FD.scope===s.id?'rgba(13,216,128,.4)':'rgba(255,255,255,.08)'};background:${FD.scope===s.id?'rgba(13,216,128,.12)':'transparent'};color:${FD.scope===s.id?'#0DD880':'#7b82a8'};font-size:13px;font-weight:${FD.scope===s.id?700:400};cursor:pointer;font-family:'Heebo',sans-serif">${s.label}</button>`).join('')}
     </div>` : ''}
 
     <!-- Calculator card -->
-    <div class="card" style="margin-bottom:14px;padding:22px">
+    <div class="card" style="margin-bottom:14px;padding:22px;direction:rtl;text-align:right">
       <div style="font-size:15px;font-weight:700;margin-bottom:18px">מחשבון ריבית דריבית</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -5647,8 +5685,9 @@ function buildFreedomTab() {
     </div>
 
     <!-- Rule-300 quick calc -->
-    <div class="card" style="padding:20px;background:rgba(13,216,128,.04);border-color:rgba(13,216,128,.15)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:12px">מחשבון חוק ה-300 — מהי ההוצאה החודשית שלך בפרישה?</div>
+    <div class="card" style="padding:20px;background:rgba(13,216,128,.08);border:2px solid rgba(13,216,128,.35);border-radius:16px">
+      <div style="font-size:14px;font-weight:800;margin-bottom:14px;color:#0DD880">מחשבון חוק ה-300</div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">מהי ההוצאה החודשית הרצויה שלך בפרישה?</div>
       <div style="display:flex;gap:8px;align-items:center">
         <input id="fc_monthly_expense" type="number" inputmode="decimal" placeholder="10,000"
           style="flex:1;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
@@ -5656,7 +5695,9 @@ function buildFreedomTab() {
         <span style="color:#7b82a8;font-size:13px;white-space:nowrap">× 300 =</span>
         <div id="fc_300_result" style="font-size:18px;font-weight:800;color:#0DD880;white-space:nowrap;min-width:120px">—</div>
       </div>
-      <div style="font-size:11px;color:#4a5068;margin-top:8px">זהו יעד ההון הנדרש לעצמאות כלכלית לפי כלל ה-4%</div>
+      <div style="font-size:12px;font-weight:700;color:#0DD880;margin-top:10px;padding:8px 12px;background:rgba(13,216,128,.1);border-radius:8px;border:1px solid rgba(13,216,128,.2)">
+        זהו יעד ההון הנדרש לעצמאות כלכלית לפי כלל ה-4%
+      </div>
     </div>
 
   </div>`;
@@ -5913,6 +5954,83 @@ function avBuildChart() {
 }
 
 // ── Main render ───────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+// HOLIDAY SYSTEM
+// ══════════════════════════════════════════════════════════════
+
+const JEWISH_HOLIDAYS = [
+  // month is 0-indexed
+  { name:'ראש השנה',   month:8,  day:1,  expense:'גבוהה',  tip:'הכן תקציב לחגיגות, מתנות, ארוחות ובגדים חדשים' },
+  { name:'יום כיפור',  month:8,  day:10, expense:'בינונית',tip:'יום צום — אך כדאי לתכנן ארוחה לפני הצום' },
+  { name:'סוכות',      month:8,  day:15, expense:'גבוהה',  tip:'עלות הקמת סוכה, ארבעת המינים ואירוח' },
+  { name:'שמחת תורה', month:8,  day:22, expense:'בינונית',tip:'ממתקים, אירוח וחגיגות בבית הכנסת' },
+  { name:'חנוכה',      month:11, day:25, expense:'בינונית',tip:'מתנות לילדים, סביבונים ושמן/נרות' },
+  { name:'פורים',      month:1,  day:14, expense:'גבוהה',  tip:'תחפושות, משלוח מנות, מסיבות ומתנות' },
+  { name:'פסח',        month:2,  day:15, expense:'גבוהה',  tip:'ניקיון, קניות לחג, ליל הסדר ותיירות' },
+  { name:'יום העצמאות',month:3,  day:5,  expense:'בינונית',tip:'טיולים, מנגל ובילויים משפחתיים' },
+  { name:'שבועות',     month:4,  day:6,  expense:'בינונית',tip:'עוגות גבינה, מוצרי חלב ואירוח' },
+  { name:'תשעה באב',   month:6,  day:9,  expense:'נמוכה',  tip:'יום צום — אין הוצאות מיוחדות' },
+];
+
+const CHRISTIAN_HOLIDAYS = [
+  { name:'Christmas',    month:11, day:25, expense:'High',   tip:'Budget for gifts, decorations, travel and celebrations' },
+  { name:'New Year',     month:0,  day:1,  expense:'Medium', tip:'Plan for New Year celebrations and parties' },
+  { name:'Easter',       month:2,  day:1,  expense:'High',   tip:'Budget for gifts, Easter eggs and family meals' },
+  { name:'Valentine\'s', month:1,  day:14, expense:'Medium', tip:'Gifts, dining out and special experiences' },
+  { name:'Halloween',    month:9,  day:31, expense:'Medium', tip:'Costumes, candy and decorations' },
+  { name:'Thanksgiving', month:10, day:24, expense:'High',   tip:'Food, travel and family gatherings' },
+  { name:'Mother\'s Day',month:4,  day:2,  expense:'Medium', tip:'Gifts and dining out for mom' },
+  { name:'Father\'s Day',month:5,  day:3,  expense:'Medium', tip:'Gifts and activities for dad' },
+];
+
+function getUpcomingHolidays(monthsAhead = 3) {
+  const isHebrew = (_lang === 'he' || _lang === 'ar');
+  const holidays = isHebrew ? JEWISH_HOLIDAYS : CHRISTIAN_HOLIDAYS;
+  const now = new Date();
+  const curM = now.getMonth();
+  const results = [];
+  for(let i = 0; i <= monthsAhead; i++) {
+    const m = (curM + i) % 12;
+    holidays.filter(h => h.month === m).forEach(h => {
+      const daysUntil = i === 0
+        ? Math.max(0, h.day - now.getDate())
+        : (i * 30 - now.getDate() + h.day);
+      results.push({ ...h, daysUntil, targetMonth: m });
+    });
+  }
+  return results.filter(h => h.daysUntil >= 0).sort((a,b) => a.daysUntil - b.daysUntil);
+}
+
+function buildHolidayAlerts() {
+  const upcoming = getUpcomingHolidays(2);
+  if(!upcoming.length) return '';
+  const isHebrew = (_lang === 'he');
+  return `<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">🔔</span>
+      <div style="font-size:13px;font-weight:700;color:#e8eaf0">${isHebrew ? 'חגים קרובים — תכנן מראש' : 'Upcoming Holidays — Plan Ahead'}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0">
+      ${upcoming.slice(0,4).map((h,i) => {
+        const urgency = h.daysUntil <= 7 ? '#f87171' : h.daysUntil <= 30 ? '#f6ad55' : '#63b3ed';
+        const bg = h.daysUntil <= 7 ? 'rgba(239,68,68,.06)' : h.daysUntil <= 30 ? 'rgba(246,173,85,.06)' : 'rgba(99,179,237,.04)';
+        const daysText = h.daysUntil === 0 ? (isHebrew?'היום!':'Today!') : h.daysUntil === 1 ? (isHebrew?'מחר':'Tomorrow') : (isHebrew?`עוד ${h.daysUntil} ימים`:`In ${h.daysUntil} days`);
+        return `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:${bg};border-bottom:${i<upcoming.length-1?'1px solid rgba(255,255,255,.04)':'none'}">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="font-size:13px;font-weight:700;color:#e8eaf0">${h.name}</span>
+              <span style="font-size:10px;font-weight:600;color:${urgency};background:${urgency}18;padding:2px 8px;border-radius:20px">${daysText}</span>
+              <span style="font-size:10px;color:#4a5068">${isHebrew?`הוצאה ${h.expense}`:`${h.expense} expense`}</span>
+            </div>
+            <div style="font-size:11px;color:#7b82a8;line-height:1.5">${h.tip}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
 function buildAnnualView() {
   avLoadEvents();
   const summary = avCalcYearlySummary();
@@ -5928,20 +6046,21 @@ function buildAnnualView() {
 
   return `<div style="display:flex;flex-direction:column;gap:14px">
 
+    ${buildHolidayAlerts()}
     <!-- ─── Header + filters ─── -->
     <div class="card" style="padding:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="font-size:16px;font-weight:800">📅 מבט שנתי</div>
         <div style="display:flex;gap:6px;align-items:center">
           ${[AV.year-1, AV.year, AV.year+1].map(y=>`
-            <button onclick="AV.year=${y};render()" style="padding:5px 12px;border-radius:8px;border:1px solid ${AV.year===y?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.year===y?'rgba(13,216,128,.15)':'#17171B'};color:${AV.year===y?'#0DD880':'#7b82a8'};font-size:13px;font-family:Heebo,sans-serif;cursor:pointer">${y}</button>`).join('')}
+            <button data-action="av-year" data-year="${y}" style="padding:5px 12px;border-radius:8px;border:1px solid ${AV.year===y?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.year===y?'rgba(13,216,128,.15)':'#17171B'};color:${AV.year===y?'#0DD880':'#7b82a8'};font-size:13px;font-family:Heebo,sans-serif;cursor:pointer">${y}</button>`).join('')}
         </div>
       </div>
 
       <!-- Scope selector -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
         ${scopes.map(s=>`
-          <button onclick="AV.scope='${s.id}';render()" style="padding:7px 14px;border-radius:20px;border:1px solid ${AV.scope===s.id?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.scope===s.id?'rgba(13,216,128,.15)':'transparent'};color:${AV.scope===s.id?'#0DD880':'#7b82a8'};font-size:12px;font-weight:${AV.scope===s.id?700:400};font-family:Heebo,sans-serif;cursor:pointer">${s.label}</button>`).join('')}
+          <button data-action="av-scope" data-scope="${s.id}" style="padding:7px 14px;border-radius:20px;border:1px solid ${AV.scope===s.id?'#0DD880':'rgba(255,255,255,.08)'};background:${AV.scope===s.id?'rgba(13,216,128,.15)':'transparent'};color:${AV.scope===s.id?'#0DD880':'#7b82a8'};font-size:12px;font-weight:${AV.scope===s.id?700:400};font-family:Heebo,sans-serif;cursor:pointer">${s.label}</button>`).join('')}
       </div>
 
       <!-- Year summary -->
@@ -6011,7 +6130,7 @@ function buildAnnualView() {
     <!-- ─── Special Events ─── -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <button onclick="AV.showEventForm=true;AV.editEvent=null;AV.formData={title:'',description:'',month:new Date().getMonth(),estimatedCost:'',category:'OTHER'};render()"
+        <button data-action="av-open-event-form"
                 style="padding:7px 14px;background:rgba(13,216,128,.12);border:1px solid rgba(13,216,128,.3);border-radius:8px;color:#0DD880;font-size:13px;font-weight:600;cursor:pointer;font-family:Heebo,sans-serif">+ הוסף אירוע</button>
         <div class="section-title" style="margin:0">🎯 אירועים מיוחדים</div>
       </div>
@@ -6401,7 +6520,6 @@ function buildApp(){
     {id:'personal',  icon:'◯',   label: hasPartner ? name1 : t('personal')},
     ...(isFamily&&hasPartner ? [{id:'personal2',icon:'◯',label:name2}] : []),
     ...(isFamily            ? [{id:'family',    icon:'⌂', label:t('family')}] : []),
-    {id:'income',    icon:'↑',   label:t('income')},
     {id:'cashflow',  icon:'⇌',   label:t('cashflow')},
     {id:'savings',   icon:'◈',   label:t('savings')},
     {id:'annual',    icon:'◫',   label:t('annual')},
@@ -6453,7 +6571,7 @@ function buildApp(){
     </div>
   </aside>`;
 
-  const expenseTabs = ['personal','personal2','family','income'];
+  const expenseTabs = ['personal','personal2','family'];
   const showAddButtons = expenseTabs.includes(S.tab);
   const showExportImport = S.tab === 'settings' || S.tab === 'report';
 
@@ -6628,33 +6746,14 @@ function buildAdvisorTab() {
     ...(isFamily   ? [{id:'family',    label:'משפחה'}]:[]),
   ];
 
-  const score = calcHealthScore(S.month, S.year);
-  const scoreColor = score>=80?'#0DD880':score>=60?'#f6ad55':'#f87171';
-
   return `<div style="display:flex;flex-direction:column;gap:14px;max-width:720px">
 
     <!-- Header card -->
-    <div class="card" style="background:linear-gradient(135deg,rgba(13,216,128,.07),rgba(13,216,128,.02));border-color:rgba(13,216,128,.2);padding:18px">
-      <div style="display:flex;align-items:center;gap:14px">
-        <div style="text-align:center;flex-shrink:0">
-          <div style="position:relative;width:56px;height:56px">
-            <svg width="56" height="56" style="transform:rotate(-90deg)">
-              <circle cx="28" cy="28" r="22" fill="none" stroke="#252836" stroke-width="6"/>
-              <circle cx="28" cy="28" r="22" fill="none" stroke="${scoreColor}" stroke-width="6"
-                stroke-dasharray="${Math.round(2*Math.PI*22)}"
-                stroke-dashoffset="${Math.round(2*Math.PI*22*(1-score/100))}"
-                stroke-linecap="round"/>
-            </svg>
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${scoreColor}">${score}</div>
-          </div>
-          <div style="font-size:9px;color:#7b82a8;margin-top:2px">ציון בריאות</div>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:15px;font-weight:800;margin-bottom:4px">יועץ פיננסי AI</div>
-          <div style="font-size:12px;color:#9ca3af;line-height:1.6">
-            שאל כל שאלה פיננסית — אנתח את הנתונים שלך ואחזיר תשובה אסטרטגית מבוססת נתונים אמיתיים.
-          </div>
-        </div>
+    <div class="card" style="background:linear-gradient(135deg,rgba(13,216,128,.07),rgba(13,216,128,.02));border-color:rgba(13,216,128,.2);padding:16px 20px;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(13,216,128,.15);border:1px solid rgba(13,216,128,.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✦</div>
+      <div>
+        <div style="font-size:15px;font-weight:800;margin-bottom:3px">יועץ פיננסי AI</div>
+        <div style="font-size:12px;color:#9ca3af">שאל כל שאלה פיננסית — אנתח את הנתונים שלך ואחזיר תשובה מבוססת נתונים אמיתיים.</div>
       </div>
     </div>
 
@@ -6693,8 +6792,8 @@ function buildAdvisorTab() {
     <!-- Suggestions -->
     ${ADV.messages.length<2?`
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${SUGGESTIONS.map(s=>`
-          <button onclick="ADV.scope=ADV.scope||'all';advSend('${s.replace(/'/g,"&#39;")}') "
+        ${SUGGESTIONS.map((s,si)=>`
+          <button data-adv-suggest="${si}"
             style="padding:7px 12px;border-radius:20px;background:#17171B;border:1px solid rgba(255,255,255,.07);color:#7b82a8;font-size:11px;font-family:'Heebo',sans-serif;cursor:pointer;transition:all .15s"
             onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='#e8eaf0'"
             onmouseout="this.style.background='#17171B';this.style.color='#7b82a8'">${s}</button>`).join('')}
