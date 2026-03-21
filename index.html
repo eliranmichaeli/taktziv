@@ -378,6 +378,147 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
 .card:hover { border-color:rgba(255,255,255,.10); }
 /* Toast polish */
 .toast { border-radius:14px !important; backdrop-filter:blur(10px); background:rgba(22,25,34,.95) !important; }
+
+/* ── SIDEBAR LAYOUT ── */
+.app-layout{display:flex;min-height:100vh;}
+.app-sidebar{
+  position:fixed;top:0;right:0;bottom:0;
+  width:220px;background:#111113;
+  border-left:1px solid rgba(255,255,255,.06);
+  display:flex;flex-direction:column;
+  z-index:100;overflow-y:auto;
+  transition:transform .25s ease;
+}
+.app-sidebar::-webkit-scrollbar{width:0;}
+.sidebar-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:18px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sidebar-brand-icon{
+  width:34px;height:34px;border-radius:10px;
+  background:rgba(13,216,128,.12);border:1px solid rgba(13,216,128,.25);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.sidebar-brand-name{font-size:16px;font-weight:800;letter-spacing:-.3px;}
+.sidebar-brand-sub{font-size:9px;color:#4a5068;margin-top:-1px;}
+.sidebar-nav{flex:1;padding:10px 10px;display:flex;flex-direction:column;gap:2px;}
+.snav-btn{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:9px 12px;border-radius:10px;
+  border:none;background:transparent;
+  color:#7b82a8;font-family:'Heebo',sans-serif;
+  font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .18s ease;text-align:right;
+  position:relative;
+}
+.snav-btn:hover{
+  background:rgba(255,255,255,.04);color:#e8eaf0;
+  box-shadow:0 2px 12px rgba(0,0,0,.35);
+}
+.snav-btn.active{
+  background:rgba(13,216,128,.12);color:#0DD880;font-weight:600;
+  border:1px solid rgba(13,216,128,.2);
+}
+.snav-btn.active:hover{box-shadow:0 2px 16px rgba(13,216,128,.18);}
+.snav-icon{font-size:16px;flex-shrink:0;}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.05);margin:8px 12px;}
+.sidebar-footer{padding:12px 10px;}
+.sidebar-user{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:10px;cursor:pointer;
+  transition:background .15s;
+}
+.sidebar-user:hover{background:rgba(255,255,255,.04);}
+.sidebar-avatar{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#0DD880,#63b3ed);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#000;
+}
+.sidebar-user-name{font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sidebar-user-role{font-size:10px;color:#4a5068;}
+
+.app-main{
+  margin-right:220px;flex:1;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.app-topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(9,9,11,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,.055);
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;
+}
+.topbar-left{display:flex;align-items:center;gap:8px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-title{font-size:15px;font-weight:700;color:#e8eaf0;}
+.topbar-sub{font-size:10px;color:#4a5068;}
+.app-content{padding:20px;max-width:960px;padding-bottom:40px;}
+
+/* Month bar as topbar element */
+.month-bar-inline{display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.month-bar-inline::-webkit-scrollbar{display:none;}
+
+/* Hide old nav, show sidebar on desktop */
+.nav{display:none!important;}
+.mobile-bottom-nav{display:none;}
+.header{display:none!important;}
+.backup-bar{display:none!important;}
+
+/* Mobile: hide sidebar, show bottom nav */
+@media(max-width:768px){
+  .app-sidebar{
+    position:fixed;bottom:0;top:auto;right:0;left:0;width:100%;
+    flex-direction:row;height:58px;border-left:none;
+    border-top:1px solid rgba(255,255,255,.06);
+    overflow-x:auto;overflow-y:hidden;
+    padding:0 6px;align-items:center;
+    gap:2px;
+  }
+  .sidebar-brand,.sidebar-divider,.sidebar-footer{display:none;}
+  .sidebar-nav{flex-direction:row;padding:0;gap:0;flex:1;overflow-x:auto;}
+  .sidebar-nav::-webkit-scrollbar{display:none;}
+  .snav-btn{
+    flex-direction:column;gap:2px;padding:6px 8px;
+    font-size:10px;min-width:54px;border-radius:8px;
+    border:none!important;
+  }
+  .snav-btn.active{background:transparent;color:#0DD880;}
+  .snav-btn.active:hover{box-shadow:none;}
+  .snav-btn:hover{background:transparent;color:#e8eaf0;box-shadow:none;}
+  .snav-icon{font-size:18px;}
+  .app-main{margin-right:0;padding-bottom:68px;}
+  .app-topbar{flex-wrap:wrap;padding:8px 14px;gap:6px;}
+  .app-content{padding:12px 12px 20px;}
+}
+
+/* LTR override for non-Hebrew/Arabic */
+body.ltr-mode{direction:ltr;}
+body.ltr-mode .app-sidebar{right:auto;left:0;border-left:none;border-right:1px solid rgba(255,255,255,.06);}
+body.ltr-mode .app-main{margin-right:0;margin-left:220px;}
+body.ltr-mode .snav-btn{text-align:left;}
+@media(max-width:768px){
+  body.ltr-mode .app-sidebar{right:0;left:0;}
+  body.ltr-mode .app-main{margin-left:0;}
+}
+
+/* Lang selector */
+.lang-selector{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  justify-content:center;margin-bottom:16px;
+}
+.lang-btn{
+  padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);
+  background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;
+  font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:4px;
+}
+.lang-btn.active,.lang-btn:hover{background:rgba(13,216,128,.12);border-color:rgba(13,216,128,.3);color:#0DD880;}
+
+/* Deposit button */
+.btn-deposit{background:rgba(13,216,128,.12);color:#0DD880;padding:6px 12px;border-radius:8px;border:1px solid rgba(13,216,128,.25);cursor:pointer;font-size:12px;font-family:'Heebo',sans-serif;font-weight:600;}
+.btn-deposit:hover{background:rgba(13,216,128,.22);}
+
 </style>
 </head>
 <body>
@@ -396,7 +537,7 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
     <div style="text-align:center;margin-bottom:24px">
       <div style="width:54px;height:54px;background:rgba(13,216,128,0.15);border:1px solid rgba(13,216,128,0.35);border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px">💰</div>
       <div style="font-size:30px;font-weight:900;color:#f0f2ff;letter-spacing:-1.5px">תקציב</div>
-      <div style="font-size:13px;color:#5a6080;margin-top:6px;letter-spacing:0.3px">הכסף שלך, בשליטה שלך</div>
+      <div style="font-size:13px;color:#5a6080;margin-top:6px;letter-spacing:0.3px" data-i18n="tagline">הכסף שלך, בשליטה שלך</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:100%;margin-bottom:24px">
       <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">📊</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">מעקב<br>הוצאות</div></div>
@@ -406,7 +547,15 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
       <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">👫</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">חשבון<br>משפחתי</div></div>
       <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">📈</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">דוחות<br>וגרפים</div></div>
     </div>
-    <div style="font-size:11px;color:#3a3e55;margin-bottom:22px;text-align:center;letter-spacing:0.5px">תכנן · עקוב · חסוך · השג מטרות</div>
+    <div style="font-size:11px;color:#3a3e55;margin-bottom:22px;text-align:center;letter-spacing:0.5px">תכנן · עקוב · חסוך · השג את המטרות שלך</div>
+    <div id="landingLangBar" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:16px">
+      <button onclick="setLang('he')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇮🇱 עב</button>
+      <button onclick="setLang('en')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇺🇸 EN</button>
+      <button onclick="setLang('ru')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇷🇺 RU</button>
+      <button onclick="setLang('ar')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇸🇦 عر</button>
+      <button onclick="setLang('de')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇩🇪 DE</button>
+      <button onclick="setLang('fr')" style="padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7b82a8;font-size:11px;cursor:pointer;font-family:inherit">🇫🇷 FR</button>
+    </div>
     <div style="width:100%;display:flex;flex-direction:column;gap:10px">
       <button id="landingNewBtn" style="width:100%;padding:15px;background:#0DD880;border:none;border-radius:12px;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif;box-shadow:0 4px 20px rgba(13,216,128,.3);transition:opacity .2s">משתמש חדש</button>
       <button id="landingExistBtn" style="width:100%;padding:14px;background:transparent;border:1px solid #1e2135;border-radius:12px;color:#6c6f8a;font-size:14px;font-weight:600;cursor:pointer;font-family:Heebo,sans-serif">משתמש רשום</button>
@@ -464,7 +613,7 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
       <div id="consentBox" style="display:none;background:rgba(13,216,128,.08);border:1px solid rgba(13,216,128,.2);border-radius:10px;padding:12px;margin-bottom:4px">
         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:12px;color:#c8cce0;line-height:1.5">
           <input type="checkbox" id="emailConsentChk" style="margin-top:2px;accent-color:#0DD880;width:16px;height:16px;flex-shrink:0"/>
-          <span>אני מאשר/ת קבלת עדכונים, הודעות מערכת ומידע על תכונות חדשות מ-<strong>תקציב</strong> לכתובת המייל שלי. ניתן לבטל בכל עת.<br/><span style="color:#f87171;font-weight:700">* חובה לאישור לצורך הרשמה לאפליקציה</span></span>
+          <span>אני מאשר/ת קבלת עדכונים, הודעות מערכת ומידע על תכונות חדשות מ-<strong>תקציב</strong> לכתובת המייל שלי. ניתן לבטל את ההרשמה בכל עת.<br/><span style="color:#f87171;font-weight:700">* חובה לאישור לצורך הרשמה לאפליקציה</span></span>
         </label>
       </div>
       <button class="auth-btn" id="authSubmitBtn" onclick="handleEmailAuth()">התחבר</button>
@@ -484,7 +633,7 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
   <div class="ob-header">
     <div class="ob-logo">💰</div>
     <div class="ob-title">ברוך הבא לתקציב!</div>
-    <div class="ob-sub">הגדרה ראשונית — נקח רק דקה</div>
+    <div class="ob-sub">הגדרה ראשונית — נדרשת רק דקה</div>
   </div>
   <div class="ob-progress">
     <div class="ob-steps" id="obStepDots"></div>
@@ -670,16 +819,16 @@ function translateAuthError(code) {
   const map = {
     'auth/email-already-in-use':'כתובת המייל כבר רשומה',
     'auth/invalid-email':'כתובת מייל לא תקינה',
-    'auth/weak-password':'סיסמה חלשה מדי (מינימום 6 תווים)',
-    'auth/user-not-found':'משתמש לא נמצא',
+    'auth/weak-password':'הסיסמה קצרה מדי — דרושים לפחות 6 תווים',
+    'auth/user-not-found':'לא נמצא משתמש עם כתובת דוא"ל זו',
     'auth/wrong-password':'סיסמה שגויה',
-    'auth/invalid-credential':'פרטי התחברות שגויים',
-    'auth/too-many-requests':'יותר מדי ניסיונות, נסה שוב מאוחר יותר',
-    'auth/popup-closed-by-user':'החלון נסגר לפני השלמת הכניסה',
+    'auth/invalid-credential':'כתובת הדוא"ל או הסיסמה שגויים',
+    'auth/too-many-requests':'יותר מדי ניסיונות כניסה — נסה שוב מאוחר יותר',
+    'auth/popup-closed-by-user':'חלון ההתחברות נסגר לפני שהפעולה הושלמה',
     'auth/redirect-cancelled-by-user':'ההתחברות בוטלה',
     'auth/unauthorized-domain':'הדומיין לא מורשה — בדוק Firebase Console',
     'auth/operation-not-supported-in-this-environment':'הדפדפן לא תומך בפעולה זו',
-    'auth/account-exists-with-different-credential':'מייל זה כבר רשום בשיטה אחרת — נסה להתחבר עם סיסמה',
+    'auth/account-exists-with-different-credential':'כתובת הדוא"ל כבר רשומה עם שיטת כניסה אחרת — נסה להתחבר עם סיסמה',
     'auth/credential-already-in-use':'חשבון זה כבר קיים',
   };
   return map[code]||'שגיאה: '+code;
@@ -1124,7 +1273,7 @@ function render(){window.renderApp=render;
   updateSyncDot();
 }
 
-function buildApp(){
+function buildApp_OLD_DISABLED(){
   const showMonth=S.tab!=='settings';
   return buildHeader()+buildNav()+buildMobileBottomNav()+buildBackupBar()+(showMonth?buildMonthBar():'')+
     `<div class="content">`+
@@ -1166,8 +1315,8 @@ initTheme();
 // ── Onboarding Wizard ─────────────────────────────────────
 const OB_STEPS = [
   { id:'account_type', label:'🏠 סוג חשבון',        emoji:'🏠', title:'החשבון הוא עבור...', sub:'בחר את סוג החשבון שמתאים לך ורשום שמות' },
-  { id:'profile',      label:'👤 פרופיל אישי',      emoji:'👤', title:'ספר לנו עליך', sub:'נתאים את האפליקציה בדיוק עבורך' },
-  { id:'budget',       label:'📅 הגדרת תקציב',      emoji:'📅', title:'מתי מתחיל החודש שלך?', sub:'היום בחודש שממנו תחשב ההוצאות' },
+  { id:'profile',      label:'👤 פרופיל אישי',      emoji:'👤', title:'ספרו לנו עליכם', sub:'נתאים את האפליקציה בדיוק בשבילך' },
+  { id:'budget',       label:'📅 הגדרת תקציב',      emoji:'📅', title:'מאיזה יום מתחיל החודש התקציבי שלך?', sub:'בחר את יום תחילת החודש התקציבי' },
   { id:'cats_p',       label:'👤 קטגוריות אישיות',  emoji:'🗂', title:'קטגוריות הוצאות אישיות', sub:'בחר את הקטגוריות הרלוונטיות עבורך' },
   { id:'cats_f',       label:'🏡 קטגוריות משפחה',  emoji:'🏡', title:'קטגוריות הוצאות משפחה', sub:'הוצאות משותפות של כל המשפחה' },
   { id:'income',       label:'💵 מקורות הכנסה',     emoji:'💵', title:'מאיפה מגיעות ההכנסות שלך?', sub:'בחר את מקורות ההכנסה שלך' },
@@ -1298,7 +1447,7 @@ function renderObStep() { window.obData = obData; // keep in sync
     <div style="font-size:12px;color:#7b82a8;margin-bottom:6px;font-weight:600">📅 תאריך לידה (אופציונלי)</div>
     <input class="ob-input" id="obDob" type="date" placeholder="תאריך לידה" value="${obData.dob}"
       style="color:${obData.dob?'#e8eaf0':'#7b82a8'};-webkit-appearance:none;"/>
-    <div style="font-size:11px;color:#7b82a8;margin-top:2px">לקבלת תזכורות ואפשרויות עתידיות</div>`;
+    <div style="font-size:11px;color:#7b82a8;margin-top:2px">לצורך התאמה אישית של האפליקציה</div>`;
   }
 
   if(step.id === 'budget') {
@@ -1670,7 +1819,7 @@ async function applyOnboarding() {
 
 
 // ── Savings Tab ───────────────────────────────────────────
-function buildSavings() {
+function buildSavings_OLD() {
   const _m=S.month,_y=S.year;
   const _budP=getMonthBudget('personal',_m,_y);
   const _budF=getMonthBudget('family',_m,_y);
@@ -1696,7 +1845,7 @@ function buildSavings() {
           <div style="font-weight:700;font-size:14px">${s.name}</div>
           <div style="font-size:11px;color:#7b82a8;margin-top:2px">
             ${s.monthly?getCurrencySymbol()+s.monthly.toLocaleString()+'/חודש · ':''}
-            ${s.endDate?'עד '+new Date(s.endDate).toLocaleDateString('he-IL'):'ללא תאריך סיום'}
+            ${s.endDate?'עד '+new Date(s.endDate).toLocaleDateString('he-IL'):'ללא תאריך יעד'}
           </div>
         </div>
         <div style="text-align:left">
@@ -1768,7 +1917,7 @@ function buildSavings() {
   </div>`;
 }
 
-function calcSavingsTotal(s) {
+function calcSavingsTotal(s) { return calcSavingsCurrent(s); } function calcSavingsTotal_orig(s) {
   const now = new Date();
   const start = s.startDate ? new Date(s.startDate) : now;
   const end = s.endDate ? new Date(s.endDate) : now;
@@ -1836,9 +1985,8 @@ function buildMobileBottomNav(){
     ['cashflow','💸','תזרים'],
     ['report','📊','דוחות'],
     ['ai','🤖','AI'],
-    ['annual','📅','מבט שנתי'],
-    ['cfo','💬','CFO'],
-    ['freedom','🎯','חופש'],
+    ['annual','◫','מבט שנתי'],
+    ['freedom','◎','חופש'],
     ['settings','⚙️','הגדרות'],
   ];
   if(isAdmin()) tabs.push(['admin','👑','ניהול']);
@@ -1878,19 +2026,20 @@ function getTabLabels() {
   const name1 = p.name || 'אישי';
   const name2 = p.partnerName || 'אישי 2';
   const allTabs = [
-    ['personal','👤', tabLabel('personal', hasPartner ? name1 : 'חשבון אישי')],
+    ['dashboard','⊞', tabLabel('dashboard','לוח בקרה')],
+    ['personal','◯', tabLabel('personal', hasPartner ? name1 : 'חשבון אישי')],
     ...(isFamily ? [
-      ...(hasPartner ? [['personal2','👤', tabLabel('personal2', name2)]] : []),
-      ['family','🏡', tabLabel('family','חשבון משפחתי')],
+      ...(hasPartner ? [['personal2','◯', tabLabel('personal2', name2)]] : []),
+      ['family','⌂', tabLabel('family','חשבון משפחתי')],
     ] : []),
-    ['savings','🏦', tabLabel('savings','חיסכון')],
-    ['cashflow','💸', tabLabel('cashflow','תזרים')],
-    ['report','📊', tabLabel('report','דוחות')],
-    ['ai','🤖', tabLabel('ai','AI')],
-    ['settings','⚙️', tabLabel('settings','הגדרות')],
-    ['annual','📅', 'מבט שנתי'],
-    ['cfo','💬', 'CFO'],
-    ['freedom','🎯', 'חופש'],
+    ['income','↑', tabLabel('income','הכנסות')],
+    ['cashflow','⇌', tabLabel('cashflow','תזרים')],
+    ['savings','◈', tabLabel('savings','חיסכון')],
+    ['report','▦', tabLabel('report','דוחות')],
+    ['annual','◫', tabLabel('annual','מבט שנתי')],
+    ['ai','✦', tabLabel('ai','יועץ AI')],
+    ['freedom','◎', tabLabel('freedom','חופש')],
+    ['settings','⚙', tabLabel('settings','הגדרות')],
   ];
   return allTabs.filter(t => !tabHidden(t[0]));
 }
@@ -1922,7 +2071,7 @@ function buildDash(){
   const hasBudget=getMonthBudget('personal',m,y)>0||getMonthBudget('family',m,y)>0;
   const alertHtml=alerts.length>0?`<div class="alert-banner">⚠️ חרגת מיעד: ${alerts.map(a=>`<strong>${a.cat}</strong> (${fmt(a.spent)}/${fmt(a.goal)})`).join(', ')}</div>`:'';
   const healthCard = buildHealthScoreCard(m,y);
-  const budgetSection=hasBudget?`<div class="card"><div class="section-title" style="margin-bottom:12px">📋 מעקב תקציב — ${MONTHS[m]} ${y}</div>${buildBudgetBar('personal',m,y)}${buildBudgetBar('family',m,y)}</div>`
+  const budgetSection=hasBudget?`<div class="card"><div class="section-title" style="margin-bottom:12px">מעקב תקציב — ${MONTHS[m]} ${y}</div>${buildBudgetBar('personal',m,y)}${buildBudgetBar('family',m,y)}</div>`
     :`<div class="card" style="text-align:center;padding:16px 16px 14px"><div style="font-size:20px;margin-bottom:6px">📋</div><div style="font-weight:700;font-size:14px;margin-bottom:4px">הגדר תקציב חודשי</div><div style="color:#7b82a8;font-size:12px;margin-bottom:12px">הגדר תקציב חודשי ותעקוב בזמן אמת אחרי ההוצאות</div><button class="btn btn-primary" data-action="goto-budget-settings">⚙️ הגדר תקציב</button></div>`;
   // Tasks widget
   const tkKey=getTaskKey(m,y);
@@ -1934,7 +2083,7 @@ function buildDash(){
   const tasksWidget=(totalT+totalG>0)?`
     <div class="card" style="margin-bottom:14px;cursor:pointer" data-tab="tasks">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div class="section-title">✅ משימות ומטרות — ${MONTHS[m]}</div>
+        <div class="section-title">משימות ומטרות — ${MONTHS[m]}</div>
         <span style="font-size:12px;color:#0DD880">לכל המשימות →</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1954,12 +2103,12 @@ function buildDash(){
   ${tasksWidget}
   ${budgetSection}
   <div class="grid2">
-    <div class="card"><div class="section-title">👤 אישי</div>
+    <div class="card"><div class="section-title">אישי</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="color:#7b82a8;font-size:12px">קבועות</span><span style="font-weight:600">${fmt(fixedTotal('personal'))}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:#7b82a8;font-size:12px">משתנות</span><span style="font-weight:600">${fmt(varTotal('personal',m,y))}</span></div>
       <hr class="divider"/><div style="display:flex;justify-content:space-between"><span style="font-weight:700">סה״כ</span><span style="font-weight:800;color:#f87171">${fmt(fixedTotal('personal')+varTotal('personal',m,y))}</span></div>
     </div>
-    <div class="card"><div class="section-title">🏡 משפחה</div>
+    <div class="card"><div class="section-title">משפחה</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="color:#7b82a8;font-size:12px">קבועות</span><span style="font-weight:600">${fmt(fixedTotal('family'))}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:#7b82a8;font-size:12px">משתנות</span><span style="font-weight:600">${fmt(varTotal('family',m,y))}</span></div>
       <hr class="divider"/><div style="display:flex;justify-content:space-between"><span style="font-weight:700">סה״כ</span><span style="font-weight:800;color:#f6ad55">${fmt(fixedTotal('family')+varTotal('family',m,y))}</span></div>
@@ -1970,7 +2119,7 @@ function buildDash(){
 function buildGoalBars(m,y){
   const entries=Object.entries(db.settings.goals||{}).filter(([,g])=>g>0);
   if(!entries.length)return'';
-  return`<div class="card"><div class="section-title">🎯 יעדי תקציב — ${MONTHS[m]}</div>${entries.map(([cat,goal])=>{
+  return`<div class="card"><div class="section-title">יעדי תקציב — ${MONTHS[m]}</div>${entries.map(([cat,goal])=>{
     const spent=varForCat(cat,m,y).reduce((s,e)=>s+toBase(e.amount||0,e.currency),0)+fixedForCat(cat).reduce((s,e)=>s+toBase(e.amount||0,e.currency),0);
     const pct=Math.min(100,Math.round(spent/goal*100));
     const cls=pct<75?'goal-ok':pct<100?'goal-warn':'goal-over';
@@ -2363,7 +2512,7 @@ function buildReport(){
     </div>
     <!-- Top 5 -->
     <div class="card">
-      <div class="section-title">🔝 הוצאות גדולות — ${MONTHS[m]}</div>
+      <div class="section-title">הוצאות גדולות — ${MONTHS[m]}</div>
       ${top5.length?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
         ${top5.map((e,i)=>`<div style="display:flex;align-items:center;gap:10px">
           <div style="width:22px;height:22px;border-radius:50%;background:${COLORS[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0">${i+1}</div>
@@ -2429,10 +2578,10 @@ function healthScoreColor(score) {
   return '#f87171';
 }
 function healthScoreLabel(score) {
-  if(score>=80) return '🟢 מצוין';
-  if(score>=60) return '🟡 טוב';
-  if(score>=40) return '🟠 לשיפור';
-  return '🔴 דורש תשומת לב';
+  if(score>=80) return 'מצוין';
+  if(score>=60) return 'טוב';
+  if(score>=40) return 'לשיפור';
+  return 'דורש תשומת לב';
 }
 
 function buildHealthScoreCard(m,y) {
@@ -2521,7 +2670,7 @@ function buildSettings(){
       </div>`:''}
 
       <div class="settings-section-title" style="color:#0DD880;font-size:14px">📋 הגדרת תקציב</div>
-      <div style="color:#7b82a8;font-size:12px;margin-bottom:14px">הגדר תקציב חודשי ו/או שנתי. ניתן לעקוף לחודש ספציפי מלוח הבקרה.</div>
+      <div style="color:#7b82a8;font-size:12px;margin-bottom:14px">הגדר תקציב חודשי ו/או שנתי. ניתן לשנות עבור חודש מסוים ישירות מלוח הבקרה.</div>
 
       <div style="font-size:12px;font-weight:700;color:#63b3ed;margin-bottom:8px">📅 תקציב חודשי (ברירת מחדל)</div>
       <div class="goal-row">
@@ -2537,7 +2686,7 @@ function buildSettings(){
 
       <hr style="border:none;border-top:1px solid #252836;margin:14px 0"/>
       <div style="font-size:12px;font-weight:700;color:#f6ad55;margin-bottom:8px">📆 תקציב שנתי (יעד שנה)</div>
-      <div style="color:#7b82a8;font-size:11px;margin-bottom:10px">אם מוגדר, יוצג סיכום שנתי בדוחות. אם ריק — יחושב אוטומטית מהתקציב החודשי × 12</div>
+      <div style="color:#7b82a8;font-size:11px;margin-bottom:10px">אם מוגדר, יוצג סיכום שנתי בדוחות. אם לא הוזן — יחושב אוטומטית על בסיס התקציב החודשי כפול 12</div>
       <div class="goal-row">
         <div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-size:15px">👤</span><div><div style="font-size:13px;font-weight:700">אישי</div></div></div>
         <input class="goal-input" type="number" inputmode="decimal" placeholder="${(bud.personal||0)*12||'אוטומטי'}" value="${bud.personalYearly||''}" data-action="set-default-budget" data-type="personalYearly" style="width:110px"/>
@@ -2566,7 +2715,7 @@ function buildSettings(){
       <hr style="border:none;border-top:1px solid #252836;margin:14px 0"/>
       <div>
         <div style="font-size:13px;font-weight:700;margin-bottom:4px">📅 יום התחלת תקציב</div>
-        <div style="font-size:11px;color:#7b82a8;margin-bottom:10px">ממתי מתחיל החודש התקציבי שלך? (לדוגמה: ה-10 לחודש אם האשראי יורד ב-10)</div>
+        <div style="font-size:11px;color:#7b82a8;margin-bottom:10px">ממתי מתחיל החודש התקציבי שלך? (לדוגמה: ה-יום 10 אם האשראי יורד ב-10)</div>
         <div style="display:flex;align-items:center;gap:12px">
           <select class="input" style="width:90px" data-action="set-budget-start-day">
             ${[1,5,10,15,20,25].map(d=>`<option value="${d}"${(bud.startDay||1)===d?' selected':''}>${d} לחודש</option>`).join('')}
@@ -2592,7 +2741,7 @@ function buildSettings(){
       <div class="pill-list">${s.tags.map(t=>`<div class="pill"><span class="tag tag-custom">${t}</span><button class="pill-del" data-action="del-tag" data-val="${t}">×</button></div>`).join('')}</div>
       <div class="input-row"><input class="input" id="newTag" placeholder="תגית חדשה…"/><button class="btn btn-primary" style="white-space:nowrap" data-action="add-tag">+ הוסף</button></div>
     </div>
-    <div class="card"><div class="settings-section-title">🎯 יעדי תקציב לפי קטגוריה</div>
+    <div class="card"><div class="settings-section-title">יעדי תקציב לפי קטגוריה</div>
       <div style="color:#7b82a8;font-size:12px;margin-bottom:12px">הגדר תקרה לכל קטגוריה — תקבל התראה בלוח הבקרה</div>
       ${allCats.map(cat=>`<div class="goal-row"><span style="font-size:13px;flex:1">${cat}</span><input class="goal-input" type="number" inputmode="decimal" placeholder="ללא יעד" value="${s.goals[cat]||''}" data-action="set-goal" data-cat="${cat}"/><span style="color:#7b82a8;font-size:12px;margin-right:4px">${getCurrencySymbol()}</span></div>`).join('')}
       ${allCats.length===0?`<div class="empty">הוסף קטגוריות תחילה</div>`:''}
@@ -2620,9 +2769,9 @@ function buildSettings(){
       <button class="btn btn-primary" data-action="open-add-card" style="width:100%">+ הוסף כרטיס אשראי</button>
     </div>
 
-    <!-- ── יתרת פתיחה לתזרים ── -->
+    <!-- ── יתרת פתיחה לחשבון לתזרים ── -->
     <div class="card">
-      <div class="settings-section-title">💸 יתרת פתיחה לתזרים</div>
+      <div class="settings-section-title">💸 יתרת פתיחה לחשבון לתזרים</div>
       <div style="font-size:12px;color:#7b82a8;margin-bottom:14px">הכנס את היתרה הנוכחית בחשבון — זה הבסיס לחישוב התזרים החודשי. מומלץ לעדכן בתחילת כל חודש.</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div>
@@ -3053,7 +3202,7 @@ function buildTasks() {
   return `<div>
     ${prevUnfinishedTasks.length||prevUnfinishedGoals.length ? `
     <div class="card" style="background:rgba(246,173,85,.07);border:1px solid rgba(246,173,85,.25);margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:#f6ad55;margin-bottom:8px">⏳ לא הושלם מ${MONTHS[prevM]}</div>
+      <div style="font-size:13px;font-weight:700;color:#f6ad55;margin-bottom:8px">⏳ פריטים שלא הושלמו מ${MONTHS[prevM]}</div>
       ${prevUnfinishedTasks.map(t=>`
         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(246,173,85,.15)">
           <span style="font-size:13px;color:#c8cce0">✅ ${t.text}</span>
@@ -3317,7 +3466,7 @@ function buildCashflow(scope) {
     <div class="card" style="background:linear-gradient(135deg,rgba(13,216,128,.12),rgba(72,187,120,.07));border:1px solid rgba(13,216,128,.25);margin-bottom:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div>
-          <div style="font-size:16px;font-weight:800">💸 תזרים ${scopeLabel}</div>
+          <div style="font-size:16px;font-weight:800">תזרים ${scopeLabel}</div>
           <div style="font-size:12px;color:#7b82a8">${MONTHS[curM]} ${curY}</div>
         </div>
         <div style="font-size:11px;color:#7b82a8;background:#17171B;border-radius:8px;padding:6px 10px">
@@ -3510,7 +3659,7 @@ function buildAdmin() {
     {key:'tab_family_name',              label:'שם הלשונית',            def:'חשבון משפחתי'},
     {group:'חיסכון ותזרים'},
     {key:'savings_title',                label:'כותרת דף חיסכון',      def:'🏦 תוכניות חיסכון'},
-    {key:'cashflow_title',               label:'כותרת דף תזרים',       def:'💸 תזרים מזומנים'},
+    {key:'cashflow_title',               label:'כותרת דף תזרים',       def:'תזרים מזומנים'},
     {key:'tab_savings_name',             label:'שם לשונית חיסכון',     def:'חיסכון'},
     {key:'tab_cashflow_name',            label:'שם לשונית תזרים',      def:'תזרים'},
   ];
@@ -4210,7 +4359,7 @@ function attach(){
         db.cashflow.openingBalance.personal=parseFloat(g('cfBalancePersonal')?.value)||0;
         if(g('cfBalancePersonal2')) db.cashflow.openingBalance.personal2=parseFloat(g('cfBalancePersonal2')?.value)||0;
         if(g('cfBalanceFamily')) db.cashflow.openingBalance.family=parseFloat(g('cfBalanceFamily')?.value)||0;
-        await saveDB();showToast('✅ יתרת פתיחה נשמרה');render();return;
+        await saveDB();showToast('✅ יתרת פתיחה לחשבון נשמרה');render();return;
       }
       if(a==='rollover-task'){
         const fromKey=b.dataset.key, id=b.dataset.id, toKey=b.dataset.target, t=b.dataset.type;
@@ -4362,7 +4511,7 @@ ${(()=>{const fg=db.settings.financialGoals||{};const lines=[];if(fg.monthlySavi
         return;
       }
       if(a==='open-ai-advisor'){S.modal='ai-advisor';render();return;}
-      if(a==='goto-ai'){S.tab='ai';render();return;}
+      if(a==='goto-ai'||a==='goto-cfo'){S.tab='ai';render();return;}
       if(a==='run-ai-advisor'){runAIAdvisor(S.month,S.year);return;}
       if(a==='open-saving'){S.modal='saving';S.editId=null;S.activeStype=b.dataset.stype;render();return;}
       if(a==='edit-saving'){
@@ -4370,6 +4519,8 @@ ${(()=>{const fg=db.settings.financialGoals||{};const lines=[];if(fg.monthlySavi
         const sv=(db.savings||[]).find(x=>x.id===b.dataset.id);
         S.activeStype=sv?sv.stype:'personal'; render(); return;
       }
+      // Deposit actions
+      if(await window._handleDeposit(a,b)) return;
       if(a==='del-saving'){
         if(!confirm('למחוק תוכנית חיסכון זו?'))return;
         db.savings=(db.savings||[]).filter(x=>x.id!==b.dataset.id);
@@ -4377,7 +4528,7 @@ ${(()=>{const fg=db.settings.financialGoals||{};const lines=[];if(fg.monthlySavi
       }
       if(a==='save-saving'){
         const name=document.getElementById('savName')?.value?.trim();
-        if(!name){showToast('נא להזין שם לתוכנית');return;}
+        if(!name){showToast('יש להזין שם לתוכנית החיסכון');return;}
         const monthly=parseFloat(document.getElementById('savMonthly')?.value)||0;
         const target=parseFloat(document.getElementById('savTarget')?.value)||0;
         const startDate=document.getElementById('savStart')?.value||new Date().toISOString().split('T')[0];
@@ -4703,7 +4854,7 @@ function buildSimulationTab() {
 
     <!-- Scenario selector -->
     <div class="card" style="margin-bottom:14px">
-      <div class="section-title">⚙️ בחר תרחיש</div>
+      <div class="section-title"> בחר תרחיש</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
         ${MC_PRESETS.map(p => `
           <div onclick="llToggleScenario('${p.id}')"
@@ -4781,7 +4932,7 @@ function buildMCResults(results) {
 
   <!-- Chart -->
   <div class="card" style="margin-bottom:14px">
-    <div class="section-title">📈 פיזור תחזיות — ${months} חודשים</div>
+    <div class="section-title"> פיזור תחזיות — ${months} חודשים</div>
     <div style="overflow-x:auto">
       <svg viewBox="0 0 ${chartW} ${chartH}" width="100%" style="display:block;max-height:160px">
         <defs>
@@ -5873,6 +6024,730 @@ window.avDeleteEvent = function(id) {
 // ══════════════════════════════════════════════════════════════
 // END ANNUAL VIEW MODULE
 // ══════════════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════════════
+// I18N — Multi-language system
+// ══════════════════════════════════════════════════════════════
+
+const LANGS = {
+  he: {
+    name:'עברית', flag:'🇮🇱', dir:'rtl',
+    loading:'טוען...', login:'התחברות', register:'הרשמה',
+    email:'כתובת דוא"ל', password:'סיסמה (לפחות 6 תווים)', fullName:'שם מלא',
+    signIn:'התחבר', signUp:'הירשם', forgotPass:'שכחתי סיסמה',
+    orContinue:'או', continueGoogle:'המשך עם Google',
+    newUser:'משתמש חדש', existingUser:'משתמש רשום',
+    appTagline:'הכסף שלך, בשליטה שלך',
+    freePlan:'חינם', noCreditCard:'ללא כרטיס אשראי', fullAccess:'גישה מלאה',
+    startFree:'התחל עכשיו — בחינם', chooseplan:'בחר תוכנית',
+    betaFree:'גישה מלאה — חינם לגמרי בשלב הבטא',
+    consentText:'אני מאשר/ת קבלת עדכונים, הודעות מערכת ומידע על תכונות חדשות מ-תקציב לכתובת הדוא"ל שלי. ניתן לבטל את ההרשמה בכל עת.',
+    consentRequired:'* חובה לאישור לצורך הרשמה',
+    back:'חזרה', next:'המשך', finish:'סיים והתחל!',
+    dashboard:'לוח בקרה', transactions:'תנועות', cashflow:'תזרים',
+    reports:'דוחות', advisor:'יועץ AI', settings:'הגדרות',
+    savings:'חיסכון', annual:'מבט שנתי', freedom:'חופש', cfo:'CFO',
+    addExpense:'+ הוצאה', addIncome:'+ הכנסה',
+    income:'הכנסות', expenses:'הוצאות', balance:'יתרה',
+    personal:'אישי', family:'משפחה',
+    noData:'אין נתונים', save:'שמור', cancel:'ביטול', delete:'מחק', edit:'ערוך',
+    confirmEdit:'האם לבצע את השינוי?', yes:'כן', no:'ביטול',
+    depositAdded:'הפקדה נוספה', planSaved:'תוכנית חיסכון נשמרה',
+  },
+  en: {
+    name:'English', flag:'🇺🇸', dir:'ltr',
+    loading:'Loading...', login:'Sign In', register:'Sign Up',
+    email:'Email address', password:'Password (min 6 chars)', fullName:'Full name',
+    signIn:'Sign In', signUp:'Sign Up', forgotPass:'Forgot password',
+    orContinue:'or', continueGoogle:'Continue with Google',
+    newUser:'New User', existingUser:'Existing User',
+    appTagline:'Your money, under control',
+    freePlan:'Free', noCreditCard:'No credit card required', fullAccess:'Full access',
+    startFree:'Get started — free', chooseplan:'Choose a plan',
+    betaFree:'Full access — completely free during beta',
+    consentText:'I agree to receive updates, system notifications and info about new features from Budget. Unsubscribe anytime.',
+    consentRequired:'* Required to complete registration',
+    back:'Back', next:'Continue', finish:'Finish & Start!',
+    dashboard:'Dashboard', transactions:'Transactions', cashflow:'Cash Flow',
+    reports:'Reports', advisor:'AI Advisor', settings:'Settings',
+    savings:'Savings', annual:'Annual View', freedom:'Freedom', cfo:'CFO',
+    addExpense:'+ Expense', addIncome:'+ Income',
+    income:'Income', expenses:'Expenses', balance:'Balance',
+    personal:'Personal', family:'Family',
+    noData:'No data', save:'Save', cancel:'Cancel', delete:'Delete', edit:'Edit',
+    confirmEdit:'Apply this change?', yes:'Yes', no:'Cancel',
+    depositAdded:'Deposit added', planSaved:'Savings plan saved',
+  },
+  ru: {
+    name:'Русский', flag:'🇷🇺', dir:'ltr',
+    loading:'Загрузка...', login:'Войти', register:'Регистрация',
+    email:'Электронная почта', password:'Пароль (мин. 6 символов)', fullName:'Полное имя',
+    signIn:'Войти', signUp:'Зарегистрироваться', forgotPass:'Забыл пароль',
+    orContinue:'или', continueGoogle:'Продолжить с Google',
+    newUser:'Новый пользователь', existingUser:'Уже есть аккаунт',
+    appTagline:'Ваши деньги, под контролем',
+    freePlan:'Бесплатно', noCreditCard:'Без кредитной карты', fullAccess:'Полный доступ',
+    startFree:'Начать бесплатно', chooseplan:'Выбрать план',
+    betaFree:'Полный доступ — бесплатно в период бета-теста',
+    consentText:'Я согласен получать обновления и уведомления от Budget. Можно отменить в любой момент.',
+    consentRequired:'* Требуется для регистрации',
+    back:'Назад', next:'Далее', finish:'Завершить и начать!',
+    dashboard:'Панель', transactions:'Транзакции', cashflow:'Денежный поток',
+    reports:'Отчёты', advisor:'AI Советник', settings:'Настройки',
+    savings:'Сбережения', annual:'Годовой обзор', freedom:'Свобода', cfo:'CFO',
+    addExpense:'+ Расход', addIncome:'+ Доход',
+    income:'Доходы', expenses:'Расходы', balance:'Баланс',
+    personal:'Личные', family:'Семья',
+    noData:'Нет данных', save:'Сохранить', cancel:'Отмена', delete:'Удалить', edit:'Изменить',
+    confirmEdit:'Применить изменение?', yes:'Да', no:'Отмена',
+    depositAdded:'Взнос добавлен', planSaved:'План накоплений сохранён',
+  },
+  ar: {
+    name:'العربية', flag:'🇸🇦', dir:'rtl',
+    loading:'جار التحميل...', login:'تسجيل الدخول', register:'إنشاء حساب',
+    email:'البريد الإلكتروني', password:'كلمة المرور (6 أحرف على الأقل)', fullName:'الاسم الكامل',
+    signIn:'تسجيل الدخول', signUp:'إنشاء حساب', forgotPass:'نسيت كلمة المرور',
+    orContinue:'أو', continueGoogle:'المتابعة مع Google',
+    newUser:'مستخدم جديد', existingUser:'مستخدم موجود',
+    appTagline:'أموالك تحت سيطرتك',
+    freePlan:'مجاناً', noCreditCard:'بدون بطاقة ائتمان', fullAccess:'وصول كامل',
+    startFree:'ابدأ الآن — مجاناً', chooseplan:'اختر خطة',
+    betaFree:'وصول كامل — مجاني خلال مرحلة التجربة',
+    consentText:'أوافق على استلام التحديثات والإشعارات من Budget. يمكن الإلغاء في أي وقت.',
+    consentRequired:'* مطلوب للتسجيل',
+    back:'رجوع', next:'متابعة', finish:'إنهاء والبدء!',
+    dashboard:'لوحة التحكم', transactions:'المعاملات', cashflow:'التدفق النقدي',
+    reports:'التقارير', advisor:'مستشار AI', settings:'الإعدادات',
+    savings:'المدخرات', annual:'النظرة السنوية', freedom:'الحرية', cfo:'المدير المالي',
+    addExpense:'+ مصروف', addIncome:'+ دخل',
+    income:'الدخل', expenses:'المصروفات', balance:'الرصيد',
+    personal:'شخصي', family:'عائلة',
+    noData:'لا توجد بيانات', save:'حفظ', cancel:'إلغاء', delete:'حذف', edit:'تعديل',
+    confirmEdit:'تطبيق هذا التغيير؟', yes:'نعم', no:'إلغاء',
+    depositAdded:'تمت إضافة الإيداع', planSaved:'تم حفظ خطة الادخار',
+  },
+  de: {
+    name:'Deutsch', flag:'🇩🇪', dir:'ltr',
+    loading:'Laden...', login:'Anmelden', register:'Registrieren',
+    email:'E-Mail-Adresse', password:'Passwort (min. 6 Zeichen)', fullName:'Vollständiger Name',
+    signIn:'Anmelden', signUp:'Registrieren', forgotPass:'Passwort vergessen',
+    orContinue:'oder', continueGoogle:'Mit Google fortfahren',
+    newUser:'Neuer Benutzer', existingUser:'Bestehendes Konto',
+    appTagline:'Ihr Geld, unter Kontrolle',
+    freePlan:'Kostenlos', noCreditCard:'Keine Kreditkarte erforderlich', fullAccess:'Voller Zugang',
+    startFree:'Jetzt starten — kostenlos', chooseplan:'Plan wählen',
+    betaFree:'Voller Zugang — kostenlos in der Beta-Phase',
+    consentText:'Ich stimme dem Empfang von Updates und Benachrichtigungen von Budget zu.',
+    consentRequired:'* Erforderlich für die Registrierung',
+    back:'Zurück', next:'Weiter', finish:'Fertig & Starten!',
+    dashboard:'Dashboard', transactions:'Transaktionen', cashflow:'Cashflow',
+    reports:'Berichte', advisor:'KI-Berater', settings:'Einstellungen',
+    savings:'Ersparnisse', annual:'Jahresübersicht', freedom:'Freiheit', cfo:'CFO',
+    addExpense:'+ Ausgabe', addIncome:'+ Einnahme',
+    income:'Einnahmen', expenses:'Ausgaben', balance:'Saldo',
+    personal:'Persönlich', family:'Familie',
+    noData:'Keine Daten', save:'Speichern', cancel:'Abbrechen', delete:'Löschen', edit:'Bearbeiten',
+    confirmEdit:'Diese Änderung anwenden?', yes:'Ja', no:'Abbrechen',
+    depositAdded:'Einzahlung hinzugefügt', planSaved:'Sparplan gespeichert',
+  },
+  fr: {
+    name:'Français', flag:'🇫🇷', dir:'ltr',
+    loading:'Chargement...', login:'Connexion', register:'Inscription',
+    email:'Adresse e-mail', password:'Mot de passe (min. 6 caractères)', fullName:'Nom complet',
+    signIn:'Se connecter', signUp:"S'inscrire", forgotPass:'Mot de passe oublié',
+    orContinue:'ou', continueGoogle:'Continuer avec Google',
+    newUser:'Nouvel utilisateur', existingUser:'Compte existant',
+    appTagline:'Votre argent, sous contrôle',
+    freePlan:'Gratuit', noCreditCard:'Sans carte de crédit', fullAccess:'Accès complet',
+    startFree:'Commencer — gratuit', chooseplan:'Choisir un plan',
+    betaFree:'Accès complet — gratuit pendant la bêta',
+    consentText:"J'accepte de recevoir des mises à jour et notifications de Budget.",
+    consentRequired:"* Requis pour l'inscription",
+    back:'Retour', next:'Continuer', finish:'Terminer et commencer!',
+    dashboard:'Tableau de bord', transactions:'Transactions', cashflow:'Flux de trésorerie',
+    reports:'Rapports', advisor:'Conseiller IA', settings:'Paramètres',
+    savings:'Épargne', annual:'Vue annuelle', freedom:'Liberté', cfo:'DAF',
+    addExpense:'+ Dépense', addIncome:'+ Revenu',
+    income:'Revenus', expenses:'Dépenses', balance:'Solde',
+    personal:'Personnel', family:'Famille',
+    noData:'Aucune donnée', save:'Enregistrer', cancel:'Annuler', delete:'Supprimer', edit:'Modifier',
+    confirmEdit:'Appliquer ce changement?', yes:'Oui', no:'Annuler',
+    depositAdded:'Dépôt ajouté', planSaved:'Plan d\'épargne sauvegardé',
+  },
+};
+
+let _lang = localStorage.getItem('appLang') || 'he';
+function t(key){ return (LANGS[_lang]||LANGS.he)[key] || (LANGS.he)[key] || key; }
+function setLang(code) {
+  _lang = code;
+  localStorage.setItem('appLang', code);
+  const L = LANGS[code]||LANGS.he;
+  // RTL / LTR
+  document.documentElement.lang = code;
+  document.documentElement.dir  = L.dir;
+  document.body.dir = L.dir;
+  if(L.dir === 'ltr') { document.body.classList.add('ltr-mode'); }
+  else { document.body.classList.remove('ltr-mode'); }
+  // Update loading text font
+  const loadTxt = document.getElementById('loadingText');
+  if(loadTxt) loadTxt.textContent = t('loading');
+  // Re-render if app is visible
+  if(typeof render === 'function' && document.getElementById('app')?.style.display !== 'none') render();
+  // Update landing if visible
+  if(typeof renderLandingLang === 'function') renderLandingLang();
+}
+
+// Apply saved language on load
+(function(){
+  const L = LANGS[_lang]||LANGS.he;
+  document.body.dir = L.dir;
+  if(L.dir === 'ltr') document.body.classList.add('ltr-mode');
+})();
+
+function buildLangSelector(small=false) {
+  return `<div class="lang-selector" style="${small?'margin-bottom:10px':''}">
+    ${Object.entries(LANGS).map(([code,L])=>`
+      <button class="lang-btn${_lang===code?' active':''}" onclick="setLang('${code}')" title="${L.name}">
+        ${L.flag} ${small?'':L.name}
+      </button>`).join('')}
+  </div>`;
+}
+
+
+function buildApp(){
+  const showMonth = S.tab !== 'settings' && S.tab !== 'ai' && S.tab !== 'annual' && S.tab !== 'freedom' && S.tab !== 'cfo';
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const isFamily = p.accountType==='family';
+  const hasPartner = isFamily && p.partnerName && !p.hasSoloFamily;
+  const name1 = p.name || t('personal');
+  const name2 = p.partnerName || (t('personal')+' 2');
+  const shortUser = (currentUser.displayName||currentUser.email||'').slice(0,16);
+  const initial = shortUser.charAt(0).toUpperCase();
+
+  const NAV_TABS = [
+    {id:'dashboard', icon:'⊞',   label:t('dashboard')},
+    {id:'personal',  icon:'◯',   label: hasPartner ? name1 : t('personal')},
+    ...(isFamily&&hasPartner ? [{id:'personal2',icon:'◯',label:name2}] : []),
+    ...(isFamily            ? [{id:'family',    icon:'⌂', label:t('family')}] : []),
+    {id:'income',    icon:'↑',   label:t('income')},
+    {id:'cashflow',  icon:'⇌',   label:t('cashflow')},
+    {id:'savings',   icon:'◈',   label:t('savings')},
+    {id:'annual',    icon:'◫',   label:t('annual')},
+    {id:'report',    icon:'▦',   label:t('reports')},
+    {id:'ai',        icon:'✦',   label:t('advisor')},
+    {id:'freedom',   icon:'◎',   label:t('freedom')},
+    {id:'settings',  icon:'⚙',   label:t('settings')},
+    ...(isAdmin() ? [{id:'admin',icon:'★',label:'ניהול'}] : []),
+  ].filter(tab => !tabHidden(tab.id));
+
+  const syncDotColor = syncStatus==='online'?'#0DD880':syncStatus==='syncing'?'#63b3ed':'#f6ad55';
+
+  const sidebar = `<aside class="app-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">◈</div>
+      <div>
+        <div class="sidebar-brand-name">תקציב</div>
+        <div class="sidebar-brand-sub">BETA</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      ${NAV_TABS.map(tab=>`
+        <button class="snav-btn${S.tab===tab.id?' active':''}" data-tab="${tab.id}" title="${tab.label}">
+          <span class="snav-icon">${tab.icon}</span>
+          <span>${tab.label}</span>
+        </button>`).join('')}
+    </nav>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-footer">
+      <div style="display:flex;gap:6px;padding:0 4px;margin-bottom:8px">
+        <button onclick="toggleTheme()" title="מצב תצוגה" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px;cursor:pointer;font-size:14px;color:#7b82a8;">
+          ${document.body.classList.contains('light-mode')?'🌙':'☀'}
+        </button>
+        <button onclick="document.getElementById('langModal')?.remove();const m=document.createElement('div');m.id='langModal';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';m.onclick=e=>{if(e.target===m)m.remove()};const box=document.createElement('div');box.style.cssText='background:#111113;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;width:320px;font-family:Heebo,sans-serif';box.innerHTML=\'<div style=&quot;font-size:14px;font-weight:700;margin-bottom:14px;text-align:center&quot;>בחר שפה / Select Language</div>\'+buildLangSelector();m.appendChild(box);document.body.appendChild(m)"
+              title="שפה" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px;cursor:pointer;font-size:14px;color:#7b82a8;">
+          ${LANGS[_lang]?.flag||'🌐'}
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid rgba(255,255,255,.05);border-radius:10px;cursor:pointer" id="userBadgeBtn">
+        <div class="sidebar-avatar">${initial}</div>
+        <div style="flex:1;min-width:0">
+          <div class="sidebar-user-name">${shortUser}</div>
+          <div class="sidebar-user-role" style="display:flex;align-items:center;gap:4px">
+            <span style="width:6px;height:6px;border-radius:50%;background:${syncDotColor};display:inline-block"></span>
+            ${syncStatus==='online'?'מסונכרן':syncStatus==='syncing'?'שומר...':'לא מחובר'}
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>`;
+
+  const topbar = `<header class="app-topbar">
+    <div class="topbar-left">
+      <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" data-action="open-variable" data-type="personal">${t('addExpense')}</button>
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;border:1px solid rgba(255,255,255,.08)" data-action="open-income">${t('addIncome')}</button>
+    </div>
+    <div class="topbar-right">
+      ${showMonth ? `<div class="month-bar-inline">
+        <select class="year-sel" id="ySel">${[...Array(12)].map((_,i)=>2020+i).map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}</select>
+        ${MONTHS.map((m,i)=>`<button class="mbtn${i===S.month?' active':''}" data-month="${i}">${m.slice(0,3)}</button>`).join('')}
+      </div>` : `<div class="topbar-title">${NAV_TABS.find(t=>t.id===S.tab)?.label||''}</div>`}
+      <button class="btn btn-ghost" id="exportBtn" title="ייצא" style="padding:7px 12px;font-size:13px;border:1px solid rgba(255,255,255,.06)">↑ ייצא</button>
+      <button class="btn btn-ghost" id="importBtn" title="ייבא" style="padding:7px 12px;font-size:13px;border:1px solid rgba(255,255,255,.06)">↓ ייבא</button>
+      <input type="file" id="importFile" accept=".json" style="display:none"/>
+    </div>
+  </header>`;
+
+  const content = `<div class="app-content">` +
+    (S.tab==='dashboard'    ? buildDash()
+    :S.tab==='personal'     ? buildExpWithTasks('personal')
+    :S.tab==='savings'      ? buildSavings()
+    :S.tab==='family'       ? buildExpWithTasks('family')
+    :S.tab==='personal2'    ? buildExpWithTasks('personal2')
+    :S.tab==='cashflow'     ? buildCashflow(S.cashflowScope||'personal')
+    :S.tab==='tasks'        ? buildTasks()
+    :S.tab==='ai'           ? buildAdvisorTab()
+    :S.tab==='income'       ? buildInc()
+    :S.tab==='report'       ? buildReport()
+    :S.tab==='admin'        ? buildAdmin()
+    :S.tab==='annual'       ? buildAnnualView()
+    :S.tab==='cfo'          ? buildAdvisorTab()  // merged
+    :S.tab==='freedom'      ? buildFreedomTab()
+    :buildSettings()) +
+    buildFooter() + `</div>`;
+
+  return `<div class="app-layout">
+    ${sidebar}
+    <main class="app-main">
+      ${topbar}
+      ${content}
+    </main>
+  </div>` + (S.modal?buildModal():'') + (S.showUserMenu?buildUserMenu():'');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// UNIFIED AI ADVISOR TAB
+// ══════════════════════════════════════════════════════════════
+let ADV = {
+  messages: [],
+  loading: false,
+  scope: 'all',  // personal | personal2 | family | all
+};
+
+function advBuildContext() {
+  if(!db) return 'אין נתונים';
+  const m = S.month, y = S.year;
+  const sym = getCurrencySymbol();
+  const p = db.settings?.profile || {};
+  const name1 = p.name || 'משתמש ראשי';
+  const name2 = p.partnerName || 'בן/בת זוג';
+
+  const buildScopeCtx = (scope, label) => {
+    const stype = scope === 'family' ? 'family' : 'personal';
+    const inc  = scope === 'all'
+      ? totalInc(m,y)
+      : (db.incomes||[]).filter(e=>e.type===stype&&e.month===m&&e.year===y).reduce((s,e)=>s+toBase(e.amount||0,e.currency),0);
+    const exp  = scope === 'all'
+      ? totalExp(m,y)
+      : fixedTotal(stype) + varTotal(stype,m,y);
+    const fcf  = inc - exp;
+    return `${label}: הכנסות ${sym}${Math.round(inc).toLocaleString('he-IL')}, הוצאות ${sym}${Math.round(exp).toLocaleString('he-IL')}, FCF ${sym}${Math.round(fcf).toLocaleString('he-IL')}`;
+  };
+
+  const lines = [
+    `חודש: ${MONTHS[m]} ${y}`,
+    `ציון בריאות: ${calcHealthScore(m,y)}/100`,
+    `מטבע: ${getCurrency()}`,
+  ];
+  if(ADV.scope === 'all' || ADV.scope === 'personal')  lines.push(buildScopeCtx('personal',  name1));
+  if(ADV.scope === 'all' || ADV.scope === 'personal2') lines.push(buildScopeCtx('personal2', name2));
+  if(ADV.scope === 'all' || ADV.scope === 'family')    lines.push(buildScopeCtx('family',    'חשבון משפחתי'));
+  const savings = (db.savings||[]).map(s=>`${s.name}: נצבר ${sym}${Math.round(calcSavingsTotal(s)).toLocaleString('he-IL')} מתוך ${sym}${(s.target||0).toLocaleString('he-IL')}`);
+  if(savings.length) lines.push('חיסכון: '+savings.join(' | '));
+  const budget = db.settings?.budget||{};
+  if(budget.personal) lines.push(`תקציב אישי: ${sym}${budget.personal.toLocaleString('he-IL')}/חודש`);
+  if(budget.family)   lines.push(`תקציב משפחה: ${sym}${budget.family.toLocaleString('he-IL')}/חודש`);
+
+  return lines.join('\n');
+}
+
+async function advSend(text) {
+  if(!text?.trim() || ADV.loading) return;
+  ADV.messages.push({role:'user', text});
+  ADV.loading = true;
+  render();
+
+  const ctx = advBuildContext();
+  const scopeLabel = {all:'כולם', personal:'אישי', personal2:'בן/בת זוג', family:'משפחה'}[ADV.scope]||'כולם';
+  const system = `אתה יועץ פיננסי אישי חכם ומנוסה. יש לך נתונים מלאים של המשתמש.
+ענה תמיד בעברית, בצורה ישירה, מעשית ומבוססת נתונים.
+לא תתן אזהרות משפטיות. תהיה ספציפי עם מספרים.
+הצג תובנות פיננסיות לגבי: ${scopeLabel}.
+בסוף כל תשובה הוסף "המלצה מיידית:" עם פעולה אחת קונקרטית.
+
+נתוני המשתמש:\n${ctx}`;
+
+  const msgs = ADV.messages.slice(-8).filter(m=>m.role!=='system').map(m=>({
+    role: m.role==='ai'?'assistant':'user',
+    content: m.text,
+  }));
+
+  try {
+    const resp = await fetch('/.netlify/functions/claude', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 900,
+        system,
+        messages: msgs,
+      })
+    });
+    const data = await resp.json();
+    if(!resp.ok) throw new Error(data.error?.message || 'שגיאת שרת');
+    const reply = data.content?.[0]?.text || 'לא הצלחתי לענות, נסה שוב';
+    ADV.messages.push({role:'ai', text: reply});
+  } catch(e) {
+    ADV.messages.push({role:'ai', text:`שגיאה: ${e.message}. בדוק את חיבור הרשת ואת הגדרות השרת.`});
+  }
+  ADV.loading = false;
+  render();
+  setTimeout(()=>{ const el=document.getElementById('advMessages'); if(el) el.scrollTop=el.scrollHeight; }, 60);
+}
+
+window.advSendBtn = function() {
+  const el = document.getElementById('advInput');
+  if(!el||!el.value.trim()) return;
+  advSend(el.value.trim());
+  el.value = '';
+};
+
+function buildAdvisorTab() {
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const name1 = p.name || 'אישי';
+  const name2 = p.partnerName;
+  const isFamily = p.accountType==='family';
+  const hasPartner = isFamily && name2 && !p.hasSoloFamily;
+
+  const SUGGESTIONS = [
+    'איך אני עומד מבחינה פיננסית החודש?',
+    'מה ההוצאה הגדולה ביותר שאפשר לצמצם?',
+    'כמה חודשי מחייה יש לי בחיסכון?',
+    'מה הציון שלי ואיך אשפר אותו?',
+    'תן לי טיפ אחד להגדלת החיסכון',
+    'אם אגדיל הפקדה לחיסכון ב-500 ₪ — מה ההשפעה?',
+  ];
+
+  const scopes = [
+    {id:'all', label:'כולם'},
+    {id:'personal', label: hasPartner ? name1 : 'אישי'},
+    ...(hasPartner ? [{id:'personal2', label:name2}] : []),
+    ...(isFamily   ? [{id:'family',    label:'משפחה'}]:[]),
+  ];
+
+  const score = calcHealthScore(S.month, S.year);
+  const scoreColor = score>=80?'#0DD880':score>=60?'#f6ad55':'#f87171';
+
+  return `<div style="display:flex;flex-direction:column;gap:14px;max-width:720px">
+
+    <!-- Header card -->
+    <div class="card" style="background:linear-gradient(135deg,rgba(13,216,128,.07),rgba(13,216,128,.02));border-color:rgba(13,216,128,.2);padding:18px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="text-align:center;flex-shrink:0">
+          <div style="position:relative;width:56px;height:56px">
+            <svg width="56" height="56" style="transform:rotate(-90deg)">
+              <circle cx="28" cy="28" r="22" fill="none" stroke="#252836" stroke-width="6"/>
+              <circle cx="28" cy="28" r="22" fill="none" stroke="${scoreColor}" stroke-width="6"
+                stroke-dasharray="${Math.round(2*Math.PI*22)}"
+                stroke-dashoffset="${Math.round(2*Math.PI*22*(1-score/100))}"
+                stroke-linecap="round"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${scoreColor}">${score}</div>
+          </div>
+          <div style="font-size:9px;color:#7b82a8;margin-top:2px">ציון בריאות</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px">יועץ פיננסי AI</div>
+          <div style="font-size:12px;color:#9ca3af;line-height:1.6">
+            שאל כל שאלה פיננסית — אנתח את הנתונים שלך ואחזיר תשובה אסטרטגית מבוססת נתונים אמיתיים.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scope selector -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${scopes.map(s=>`
+        <button onclick="ADV.scope='${s.id}';render()"
+          style="padding:7px 14px;border-radius:20px;border:1px solid ${ADV.scope===s.id?'rgba(13,216,128,.4)':'rgba(255,255,255,.08)'};background:${ADV.scope===s.id?'rgba(13,216,128,.12)':'transparent'};color:${ADV.scope===s.id?'#0DD880':'#7b82a8'};font-size:12px;font-weight:${ADV.scope===s.id?700:400};cursor:pointer;font-family:'Heebo',sans-serif;transition:all .15s">
+          ${s.label}
+        </button>`).join('')}
+      <span style="font-size:11px;color:#4a5068;align-self:center;margin-right:4px">הצג נתונים של:</span>
+    </div>
+
+    <!-- Messages -->
+    <div id="advMessages" style="display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding-right:2px">
+      ${ADV.messages.length===0?`
+        <div class="card" style="text-align:center;padding:32px;color:#7b82a8">
+          <div style="font-size:28px;margin-bottom:8px">✦</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">היועץ הפיננסי שלך מוכן</div>
+          <div style="font-size:12px;line-height:1.7">שאל אותי כל שאלה על התקציב שלך.<br/>אני אנתח את הנתונים ואחזיר תשובה ספציפית.</div>
+        </div>` :
+        ADV.messages.map(msg=>`
+          <div style="display:flex;${msg.role==='user'?'justify-content:flex-start':'justify-content:flex-end'}">
+            ${msg.role==='ai'?'<div style="width:28px;height:28px;border-radius:8px;background:rgba(13,216,128,.12);border:1px solid rgba(13,216,128,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;align-self:flex-end;font-size:13px">✦</div>':''}
+            <div style="max-width:80%;padding:11px 14px;border-radius:${msg.role==='user'?'14px 14px 14px 4px':'14px 14px 4px 14px'};background:${msg.role==='user'?'#17171B':'rgba(13,216,128,.07)'};border:1px solid ${msg.role==='user'?'rgba(255,255,255,.07)':'rgba(13,216,128,.18)'};font-size:13px;line-height:1.7;white-space:pre-line;color:#e8eaf0">
+              ${msg.text}
+            </div>
+          </div>`).join('')}
+      ${ADV.loading?`
+        <div style="display:flex;justify-content:flex-end">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(13,216,128,.12);display:flex;align-items:center;justify-content:center;margin-left:8px;align-self:flex-end;font-size:13px">✦</div>
+          <div style="padding:12px 16px;border-radius:14px 14px 4px 14px;background:rgba(13,216,128,.07);border:1px solid rgba(13,216,128,.18);color:#0DD880;font-size:13px">מנתח נתונים...</div>
+        </div>`:''}
+    </div>
+
+    <!-- Suggestions -->
+    ${ADV.messages.length<2?`
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${SUGGESTIONS.map(s=>`
+          <button onclick="ADV.scope=ADV.scope||'all';advSend('${s.replace(/'/g,"&#39;")}') "
+            style="padding:7px 12px;border-radius:20px;background:#17171B;border:1px solid rgba(255,255,255,.07);color:#7b82a8;font-size:11px;font-family:'Heebo',sans-serif;cursor:pointer;transition:all .15s"
+            onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='#e8eaf0'"
+            onmouseout="this.style.background='#17171B';this.style.color='#7b82a8'">${s}</button>`).join('')}
+      </div>` : ''}
+
+    <!-- Input -->
+    <div style="display:flex;gap:8px;padding:10px 12px;background:#111113;border:1px solid rgba(255,255,255,.1);border-radius:14px">
+      <input id="advInput"
+        placeholder="שאל את היועץ הפיננסי שלך..."
+        onkeydown="if(event.key==='Enter')advSendBtn()"
+        style="flex:1;background:transparent;border:none;outline:none;color:#e8eaf0;font-size:14px;font-family:'Heebo',sans-serif;direction:${document.body.dir||'rtl'}"/>
+      <button onclick="advSendBtn()"
+        style="width:36px;height:36px;border-radius:9px;background:#0DD880;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;color:#000">➤</button>
+    </div>
+    ${ADV.messages.length?`
+      <button onclick="ADV.messages=[];render()" style="background:none;border:none;color:#4a5068;font-size:11px;cursor:pointer;font-family:'Heebo',sans-serif;padding:0;text-align:right">נקה שיחה</button>`:''}`
+    + `</div>`;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// IMPROVED SAVINGS
+// ══════════════════════════════════════════════════════════════
+
+function calcSavingsCurrent(s) {
+  // Base: extra (opening balance) + monthly * months elapsed
+  const now = new Date();
+  const start = s.startDate ? new Date(s.startDate) : now;
+  const monthsElapsed = s.endDate
+    ? Math.max(0, Math.round((Math.min(now, new Date(s.endDate)) - start) / (1000*60*60*24*30)))
+    : (s.months||0);
+  const fromMonthly = (s.monthly||0) * monthsElapsed;
+  // Plus manual deposits
+  const fromDeposits = (s.deposits||[]).reduce((sum,d)=>sum+(d.amount||0),0);
+  return (s.extra||0) + fromMonthly + fromDeposits;
+}
+
+function validateSavingsPlan(name, monthly, target, startDate, endDate, extra) {
+  const warnings = [];
+  if(!target || !endDate) return warnings;
+  const start = new Date(startDate||new Date());
+  const end   = new Date(endDate);
+  const monthsAvail = Math.max(1, Math.round((end - start) / (1000*60*60*24*30)));
+  const needed = target - (extra||0);
+  const projectedTotal = (monthly||0) * monthsAvail;
+  if(projectedTotal < needed) {
+    const shortfall = needed - projectedTotal;
+    const requiredMonthly = Math.ceil(needed / monthsAvail);
+    warnings.push({
+      type: 'shortfall',
+      msg: `תוכנית לא תשיג את היעד — תצבור ${Math.round(projectedTotal).toLocaleString('he-IL')} ₪ מתוך ${target.toLocaleString('he-IL')} ₪ (חסר ${Math.round(shortfall).toLocaleString('he-IL')} ₪)`,
+      tip: `על מנת להגיע ליעד, דרושה הפקדה חודשית של ${requiredMonthly.toLocaleString('he-IL')} ₪ (עוד ${Math.round(requiredMonthly - (monthly||0)).toLocaleString('he-IL')} ₪ נוספים)`,
+      requiredMonthly,
+    });
+  }
+  if(monthsAvail < 1) {
+    warnings.push({type:'date', msg:'תאריך הסיום קודם לתאריך ההתחלה'});
+  }
+  if((monthly||0) <= 0 && !extra) {
+    warnings.push({type:'amount', msg:'לא הוגדרה הפקדה חודשית או סכום פתיחה'});
+  }
+  return warnings;
+}
+
+function buildSavings() {
+  const savings = db.savings||[];
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const isFamily = p.accountType==='family';
+  const hasPartner = isFamily && p.partnerName && !p.hasSoloFamily;
+  const name1 = p.name || 'אישי';
+  const name2 = p.partnerName || 'אישי 2';
+
+  const personal  = savings.filter(s=>s.stype==='personal');
+  const personal2 = savings.filter(s=>s.stype==='personal2');
+  const family    = savings.filter(s=>s.stype==='family');
+
+  const totalP  = personal.reduce((s,x)=>s+calcSavingsCurrent(x),0);
+  const totalP2 = personal2.reduce((s,x)=>s+calcSavingsCurrent(x),0);
+  const totalF  = family.reduce((s,x)=>s+calcSavingsCurrent(x),0);
+  const sym = getCurrencySymbol();
+
+  const renderPlan = (sv) => {
+    const current = calcSavingsCurrent(sv);
+    const pct = sv.target ? Math.min(100, Math.round(current/sv.target*100)) : null;
+    const barColor = pct===null?'#0DD880':pct>=100?'#0DD880':pct>=60?'#f6ad55':'#63b3ed';
+    const warnings = sv.target && sv.endDate
+      ? validateSavingsPlan(sv.name, sv.monthly, sv.target, sv.startDate, sv.endDate, sv.extra)
+      : [];
+    const deposits = sv.deposits||[];
+    const lastDeposit = deposits.length ? deposits[deposits.length-1] : null;
+
+    return `<div class="card" style="margin-bottom:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;margin-bottom:3px">${sv.name}</div>
+          <div style="font-size:11px;color:#7b82a8">
+            ${sv.monthly?`${sym}${sv.monthly.toLocaleString()}/חודש`:''}
+            ${sv.endDate?' · עד '+new Date(sv.endDate).toLocaleDateString('he-IL'):''}
+            ${lastDeposit?` · הפקדה אחרונה: ${sym}${lastDeposit.amount.toLocaleString()}`: ''}
+          </div>
+        </div>
+        <div style="text-align:left;flex-shrink:0;margin-right:12px">
+          <div style="font-size:20px;font-weight:800;color:#0DD880">${sym}${Math.round(current).toLocaleString()}</div>
+          ${sv.target?`<div style="font-size:10px;color:#7b82a8">מתוך ${sym}${sv.target.toLocaleString()}</div>`:''}
+        </div>
+      </div>
+
+      ${pct!==null?`
+        <div style="background:#17171B;border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px">
+          <div style="height:8px;border-radius:6px;background:${barColor};width:${pct}%;transition:width .5s;${pct>=100?'box-shadow:0 0 8px '+barColor+'66':''}"></div>
+        </div>
+        <div style="font-size:11px;color:#7b82a8;display:flex;justify-content:space-between;margin-bottom:8px">
+          <span>${pct}% הושלם</span>
+          ${sv.target&&current<sv.target?`<span>נותר: ${sym}${Math.round(sv.target-current).toLocaleString()}</span>`:'<span style="color:#0DD880">יעד הושג!</span>'}
+        </div>`:''}
+
+      ${warnings.length?`
+        <div style="background:rgba(246,173,85,.07);border:1px solid rgba(246,173,85,.25);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+          ${warnings.map(w=>`
+            <div style="font-size:12px;color:#f6ad55;font-weight:600;margin-bottom:3px">⚠ ${w.msg}</div>
+            ${w.tip?`<div style="font-size:11px;color:#c8cce0">${w.tip}</div>`:''}
+          `).join('')}
+        </div>`:''}
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-deposit" data-action="open-deposit" data-id="${sv.id}">+ הפקדה</button>
+        <button class="btn-edt" data-action="edit-saving" data-id="${sv.id}">עריכה</button>
+        <button class="btn-del" data-action="del-saving" data-id="${sv.id}">מחיקה</button>
+      </div>
+
+      ${deposits.length?`
+        <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.05);padding-top:8px">
+          <div style="font-size:10px;color:#4a5068;font-weight:600;margin-bottom:6px">הפקדות אחרונות</div>
+          ${deposits.slice(-3).reverse().map(d=>`
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)">
+              <span style="color:#0DD880;font-weight:600">+${sym}${d.amount.toLocaleString()}</span>
+              <span>${d.note||''}</span>
+              <span>${new Date(d.date).toLocaleDateString('he-IL')}</span>
+            </div>`).join('')}
+        </div>`:''}
+    </div>`;
+  };
+
+  const renderSection = (list, label, stype) => `
+    <div class="card" style="margin-bottom:14px;padding:0;overflow:visible">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.05)">
+        <button class="btn btn-primary" style="font-size:12px;padding:7px 14px" data-action="open-saving" data-stype="${stype}">+ תוכנית חדשה</button>
+        <div style="font-size:13px;font-weight:700;color:#e8eaf0">${label}</div>
+      </div>
+      <div style="padding:14px">
+        ${list.length ? list.map(renderPlan).join('') : `<div style="text-align:center;padding:20px;color:#4a5068;font-size:13px">אין תוכניות חיסכון. לחץ "+ תוכנית חדשה" כדי להתחיל.</div>`}
+      </div>
+    </div>`;
+
+  // Summary bar
+  const summaryItems = [
+    {label:`חיסכון ${hasPartner?name1:'אישי'}`, val:totalP, color:'#0DD880'},
+    ...(hasPartner ? [{label:`חיסכון ${name2}`, val:totalP2, color:'#63b3ed'}] : []),
+    ...(isFamily   ? [{label:'חיסכון משפחתי',   val:totalF, color:'#f6ad55'}] : []),
+  ];
+
+  return `<div>
+    <div style="display:grid;grid-template-columns:repeat(${summaryItems.length},1fr);gap:10px;margin-bottom:16px">
+      ${summaryItems.map(s=>`
+        <div class="card" style="padding:14px;text-align:center;margin-bottom:0">
+          <div style="font-size:10px;color:#7b82a8;margin-bottom:4px">${s.label}</div>
+          <div style="font-size:20px;font-weight:800;color:${s.color}">${sym}${Math.round(s.val).toLocaleString()}</div>
+        </div>`).join('')}
+    </div>
+
+    ${renderSection(personal, hasPartner ? `חיסכון — ${name1}` : 'חיסכון אישי', 'personal')}
+    ${hasPartner ? renderSection(personal2, `חיסכון — ${name2}`, 'personal2') : ''}
+    ${isFamily   ? renderSection(family,   'חיסכון משפחתי', 'family') : ''}
+  </div>`;
+}
+
+function buildDepositModal() {
+  const sav = (db.savings||[]).find(s=>s.id===S.depositSavId)||{};
+  const sym = getCurrencySymbol();
+  return `<div class="overlay" id="overlay"><div class="modal" style="max-width:400px">
+    <div class="modal-title">הוספת הפקדה — ${sav.name||''}</div>
+    <div class="form-group">
+      <div style="font-size:12px;color:#7b82a8;margin-bottom:4px">סכום ההפקדה (${sym})</div>
+      <input class="input" id="depositAmt" type="number" placeholder="0" inputmode="decimal" style="direction:ltr"/>
+      <div style="font-size:12px;color:#7b82a8;margin-bottom:4px">הערה (אופציונלי)</div>
+      <input class="input" id="depositNote" placeholder="לדוגמה: הפקדה חודשית מרץ"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-action="close-modal">ביטול</button>
+      <button class="btn btn-primary" data-action="save-deposit">הוסף הפקדה</button>
+    </div>
+  </div></div>`;
+}
+
+// ── Deposit action handler ────────────────────────────────────
+// (injected into existing click handler via new action names)
+window._handleDeposit = async function(action, b) {
+  if(action==='open-deposit'){
+    S.depositSavId = b.dataset.id;
+    S.modal='deposit';
+    render(); return true;
+  }
+  if(action==='save-deposit'){
+    const amt = parseFloat(document.getElementById('depositAmt')?.value)||0;
+    if(!amt||amt<=0){showToast('נא להזין סכום תקין');return true;}
+    const note = document.getElementById('depositNote')?.value||'';
+    const idx = (db.savings||[]).findIndex(s=>s.id===S.depositSavId);
+    if(idx>=0){
+      if(!db.savings[idx].deposits) db.savings[idx].deposits=[];
+      db.savings[idx].deposits.push({amount:amt, note, date:new Date().toISOString().split('T')[0], id:'dep-'+Date.now()});
+      await saveDB();
+      S.modal=null; S.depositSavId=null;
+      render(); showToast('✅ הפקדה נוספה בהצלחה');
+    }
+    return true;
+  }
+  return false;
+};
+
+// Patch renderLandingLang for language-aware landing
+function renderLandingLang() {
+  const L = LANGS[_lang]||LANGS.he;
+  const dir = L.dir;
+  const landingEl = document.getElementById('landingScreen');
+  if(!landingEl||landingEl.style.display==='none') return;
+  // Update button texts
+  const newBtn = document.getElementById('landingNewBtn');
+  const existBtn = document.getElementById('landingExistBtn');
+  if(newBtn) newBtn.textContent = L.newUser;
+  if(existBtn) existBtn.textContent = L.existingUser;
+  // Update tagline
+  const tagEl = landingEl.querySelector('[data-i18n="tagline"]');
+  if(tagEl) tagEl.textContent = L.appTagline;
+  landingEl.dir = dir;
+}
 
 // Wire landing buttons immediately (DOM already parsed at this point)
 initLanding();
