@@ -1986,7 +1986,7 @@ function buildMobileBottomNav(){
     ['report','📊','דוחות'],
     ['ai','🤖','AI'],
     ['annual','◫','מבט שנתי'],
-    ['freedom','◎','חופש'],
+    ['freedom','◎','עצמאות כלכלית'],
     ['settings','⚙️','הגדרות'],
   ];
   if(isAdmin()) tabs.push(['admin','👑','ניהול']);
@@ -2038,7 +2038,7 @@ function getTabLabels() {
     ['report','▦', tabLabel('report','דוחות')],
     ['annual','◫', tabLabel('annual','מבט שנתי')],
     ['ai','✦', tabLabel('ai','יועץ AI')],
-    ['freedom','◎', tabLabel('freedom','חופש')],
+    ['freedom','◎', tabLabel('freedom','עצמאות כלכלית')],
     ['settings','⚙', tabLabel('settings','הגדרות')],
   ];
   return allTabs.filter(t => !tabHidden(t[0]));
@@ -2066,54 +2066,107 @@ function buildMonthBar(){
 }
 
 function buildDash(){
-  const m=S.month,y=S.year,bal=balance(m,y);
-  const alerts=getAlerts(m,y);
-  const hasBudget=getMonthBudget('personal',m,y)>0||getMonthBudget('family',m,y)>0;
-  const alertHtml=alerts.length>0?`<div class="alert-banner">⚠️ חרגת מיעד: ${alerts.map(a=>`<strong>${a.cat}</strong> (${fmt(a.spent)}/${fmt(a.goal)})`).join(', ')}</div>`:'';
-  const healthCard = buildHealthScoreCard(m,y);
-  const budgetSection=hasBudget?`<div class="card"><div class="section-title" style="margin-bottom:12px">מעקב תקציב — ${MONTHS[m]} ${y}</div>${buildBudgetBar('personal',m,y)}${buildBudgetBar('family',m,y)}</div>`
-    :`<div class="card" style="text-align:center;padding:16px 16px 14px"><div style="font-size:20px;margin-bottom:6px">📋</div><div style="font-weight:700;font-size:14px;margin-bottom:4px">הגדר תקציב חודשי</div><div style="color:#7b82a8;font-size:12px;margin-bottom:12px">הגדר תקציב חודשי ותעקוב בזמן אמת אחרי ההוצאות</div><button class="btn btn-primary" data-action="goto-budget-settings">⚙️ הגדר תקציב</button></div>`;
-  // Tasks widget
-  const tkKey=getTaskKey(m,y);
-  const tkData=db.tasks[tkKey]||{tasks:[],goals:[]};
-  const pendingT=(tkData.tasks||[]).filter(t=>!t.done).length;
-  const totalT=(tkData.tasks||[]).length;
-  const pendingG=(tkData.goals||[]).filter(g=>!g.done).length;
-  const totalG=(tkData.goals||[]).length;
-  const tasksWidget=(totalT+totalG>0)?`
-    <div class="card" style="margin-bottom:14px;cursor:pointer" data-tab="tasks">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div class="section-title">משימות ומטרות — ${MONTHS[m]}</div>
-        <span style="font-size:12px;color:#0DD880">לכל המשימות →</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${totalT?`<span style="background:rgba(72,187,120,.12);color:#68d391;border-radius:8px;padding:4px 10px;font-size:12px">${totalT-pendingT}/${totalT} משימות</span>`:''}
-        ${totalG?`<span style="background:rgba(13,216,128,.12);color:#0DD880;border-radius:8px;padding:4px 10px;font-size:12px">${totalG-pendingG}/${totalG} מטרות</span>`:''}
-      </div>
-    </div>`:
-    `<div class="card" style="margin-bottom:14px;cursor:pointer;padding:12px;text-align:center" data-tab="tasks">
-      <span style="color:#7b82a8;font-size:13px">✅ הוסף משימות ומטרות ל${MONTHS[m]} →</span>
-    </div>`;
+  const m=S.month, y=S.year;
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const isFamily = p.accountType==='family';
+  const hasPartner = isFamily && p.partnerName && !p.hasSoloFamily;
+  const name1 = p.name || 'משתמש 1';
+  const name2 = p.partnerName || 'משתמש 2';
+  const sym = getCurrencySymbol();
+  const hasBudget = getMonthBudget('personal',m,y)>0 || getMonthBudget('family',m,y)>0;
+  const alerts = getAlerts(m,y);
 
-  return alertHtml+healthCard+`<div class="stat-grid">
-    <div class="stat-card" style="background:rgba(72,187,120,.08);border:1px solid rgba(72,187,120,.2)"><div class="stat-icon">📈</div><div class="stat-label">הכנסות</div><div class="stat-val" style="color:#68d391">${fmt(totalInc(m,y))}</div></div>
-    <div class="stat-card" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)"><div class="stat-icon">📉</div><div class="stat-label">הוצאות</div><div class="stat-val" style="color:#f87171">${fmt(totalExp(m,y))}</div></div>
-    <div class="stat-card" style="background:rgba(13,216,128,.08);border:1px solid rgba(13,216,128,.2)"><div class="stat-icon">⚖️</div><div class="stat-label">יתרה</div><div class="stat-val" style="color:${bal>=0?'#68d391':'#f87171'}">${fmt(bal)}</div></div>
-  </div>
-  ${tasksWidget}
-  ${budgetSection}
-  <div class="grid2">
-    <div class="card"><div class="section-title">אישי</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="color:#7b82a8;font-size:12px">קבועות</span><span style="font-weight:600">${fmt(fixedTotal('personal'))}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:#7b82a8;font-size:12px">משתנות</span><span style="font-weight:600">${fmt(varTotal('personal',m,y))}</span></div>
-      <hr class="divider"/><div style="display:flex;justify-content:space-between"><span style="font-weight:700">סה״כ</span><span style="font-weight:800;color:#f87171">${fmt(fixedTotal('personal')+varTotal('personal',m,y))}</span></div>
+  // Alert banner
+  const alertHtml = alerts.length>0
+    ? `<div class="alert-banner">חריגה מיעד: ${alerts.map(a=>`${a.cat} (${fmt(a.spent)}/${fmt(a.goal)})`).join(', ')}</div>`
+    : '';
+
+  // ── Budget section FIRST ──
+  const budgetSection = hasBudget
+    ? `<div class="card" style="margin-bottom:14px">
+        <div class="section-title" style="margin-bottom:12px">מעקב תקציב — ${MONTHS[m]} ${y}</div>
+        ${buildBudgetBar('personal',m,y)}${buildBudgetBar('family',m,y)}
+      </div>`
+    : `<div class="card" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:3px">הגדר תקציב חודשי</div>
+          <div style="color:#7b82a8;font-size:12px">קבע גבולות חודשיים ועקוב בזמן אמת</div>
+        </div>
+        <button class="btn btn-primary" style="font-size:13px;padding:9px 16px;white-space:nowrap" data-action="goto-budget-settings">הגדר תקציב</button>
+      </div>`;
+
+  // ── Per-user income/expense table ──
+  const buildUserRow = (label, stype, color, tasks) => {
+    const inc   = (db.incomes||[]).filter(e=>e.type===stype&&e.month===m&&e.year===y).reduce((s,e)=>s+toBase(e.amount||0,e.currency),0);
+    const fixed = fixedTotal(stype);
+    const vari  = varTotal(stype,m,y);
+    const exp   = fixed + vari;
+    const net   = inc - exp;
+    const tkKey = getTaskKey(m,y);
+    const tkData= (db.tasks&&db.tasks[tkKey])||{tasks:[],goals:[]};
+    const doneT = (tkData.tasks||[]).filter(t=>t.done).length;
+    const totalT= (tkData.tasks||[]).length;
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:12px 10px;font-weight:600;color:#e8eaf0;white-space:nowrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
+          ${label}
+        </div>
+      </td>
+      <td style="padding:12px 10px;color:#0DD880;font-weight:600;text-align:left">${inc>0?sym+Math.round(inc).toLocaleString('he-IL'):'—'}</td>
+      <td style="padding:12px 10px;color:#f87171;text-align:left">${exp>0?sym+Math.round(exp).toLocaleString('he-IL'):'—'}</td>
+      <td style="padding:12px 10px;font-weight:700;color:${net>=0?'#0DD880':'#f87171'};text-align:left">${net>=0?'+':'−'}${sym}${Math.abs(Math.round(net)).toLocaleString('he-IL')}</td>
+      <td style="padding:12px 10px;text-align:center">
+        ${totalT>0
+          ? `<span style="background:rgba(13,216,128,.1);border-radius:20px;padding:3px 9px;font-size:11px;color:#0DD880;white-space:nowrap">${doneT}/${totalT}</span>`
+          : `<span style="color:#4a5068;font-size:11px">—</span>`}
+      </td>
+    </tr>`;
+  };
+
+  const rows = [
+    buildUserRow(hasPartner ? name1 : 'אישי', 'personal', '#0DD880'),
+    ...(hasPartner ? [buildUserRow(name2, 'personal2', '#63b3ed')] : []),
+    ...(isFamily   ? [buildUserRow('משפחה', 'family', '#f6ad55')] : []),
+  ];
+
+  // Totals
+  const totalIncAll = totalInc(m,y);
+  const totalExpAll = totalExp(m,y);
+  const netAll      = totalIncAll - totalExpAll;
+
+  const summaryTable = `<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:12px;color:#7b82a8">${MONTHS[m]} ${y}</div>
+      <div style="font-size:14px;font-weight:700;color:#e8eaf0">סיכום חודשי</div>
     </div>
-    <div class="card"><div class="section-title">משפחה</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="color:#7b82a8;font-size:12px">קבועות</span><span style="font-weight:600">${fmt(fixedTotal('family'))}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:#7b82a8;font-size:12px">משתנות</span><span style="font-weight:600">${fmt(varTotal('family',m,y))}</span></div>
-      <hr class="divider"/><div style="display:flex;justify-content:space-between"><span style="font-weight:700">סה״כ</span><span style="font-weight:800;color:#f6ad55">${fmt(fixedTotal('family')+varTotal('family',m,y))}</span></div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:400px">
+        <thead>
+          <tr style="background:rgba(255,255,255,.02)">
+            <th style="padding:10px;text-align:right;font-size:11px;color:#7b82a8;font-weight:600">חשבון</th>
+            <th style="padding:10px;text-align:left;font-size:11px;color:#7b82a8;font-weight:600">הכנסות</th>
+            <th style="padding:10px;text-align:left;font-size:11px;color:#7b82a8;font-weight:600">הוצאות</th>
+            <th style="padding:10px;text-align:left;font-size:11px;color:#7b82a8;font-weight:600">נטו</th>
+            <th style="padding:10px;text-align:center;font-size:11px;color:#7b82a8;font-weight:600">משימות</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join('')}
+          <tr style="background:rgba(255,255,255,.02)">
+            <td style="padding:11px 10px;font-weight:700;color:#e8eaf0">סה"כ</td>
+            <td style="padding:11px 10px;color:#0DD880;font-weight:700;text-align:left">${sym}${Math.round(totalIncAll).toLocaleString('he-IL')}</td>
+            <td style="padding:11px 10px;color:#f87171;font-weight:700;text-align:left">${sym}${Math.round(totalExpAll).toLocaleString('he-IL')}</td>
+            <td style="padding:11px 10px;font-weight:800;color:${netAll>=0?'#0DD880':'#f87171'};text-align:left">${netAll>=0?'+':'−'}${sym}${Math.abs(Math.round(netAll)).toLocaleString('he-IL')}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </div>${buildGoalBars(m,y)}`;
+  </div>`;
+
+  // ── Goal bars ──
+  return alertHtml + budgetSection + summaryTable + buildGoalBars(m,y);
 }
 
 function buildGoalBars(m,y){
@@ -4011,6 +4064,8 @@ function attach(){
   if(_appEl && !_appEl._changeDelegated) {
     _appEl._changeDelegated = true;
     _appEl.addEventListener('change', async function(e) {
+      // When a modal is open, only allow the 'ft' select and excel category selects
+      if(S.modal && e.target.id !== 'ft' && !e.target.classList.contains('excel-cat-sel') && !e.target.dataset.idx) return;
       const ys = e.target.closest('#ySel');
       if(ys){ S.year=parseInt(ys.value); render(); return; }
       const startDay = e.target.closest('[data-action="set-budget-start-day"]');
@@ -4104,6 +4159,14 @@ function attach(){
   if(_appEl && !_appEl._delegated) {
     _appEl._delegated = true;
     _appEl.addEventListener('click', async function(e) {
+      // ── AI Advisor suggestions ──
+      const advSuggestBtn = e.target.closest('[data-adv-suggest]');
+      if(advSuggestBtn) {
+        const idx = parseInt(advSuggestBtn.dataset.advSuggest);
+        const text = ADV_SUGGESTIONS_LIST[idx];
+        if(text) { ADV.scope = ADV.scope||'all'; advSend(text); }
+        return;
+      }
       // ── User badge / signout ──
       if(e.target.closest('#userBadgeBtn')){ S.showUserMenu=!S.showUserMenu; render(); return; }
       if(e.target.closest('#signOutBtn')){ await signOut(auth); S.showUserMenu=false; return; }
@@ -5441,167 +5504,250 @@ function llExpenseToTime(amount, fd) {
 }
 
 function buildFreedomTab() {
-  const fd = llCalcFreedomData();
-  const sym = db ? getCurrencySymbol() : '₪';
-  const m = S.month, y = S.year;
-
-  // Top variable expenses this month
-  const topExp = (db ? (db.variable||[]).filter(e => e.month===m && e.year===y) : [])
-    .sort((a,b) => (b.amount||0) - (a.amount||0))
-    .slice(0, 8);
-
-  const isOnTrack = fd.monthsToFreedom < 360; // under 30 years
-
-  // Milestone months
-  const milestones = [
-    { label: '25% חופש', target: fd.targetNetWorth * 0.25 },
-    { label: '50% חופש', target: fd.targetNetWorth * 0.50 },
-    { label: '🎯 עצמאות מלאה', target: fd.targetNetWorth },
-  ].map(ms => {
-    let bal = fd.currentNetWorth, months = 0;
-    while(bal < ms.target && months < 600) {
-      bal = bal * (1 + 0.07/12) + fd.monthlyFCF;
-      months++;
-    }
-    const yr = new Date().getFullYear() + Math.floor(months / 12);
-    return { ...ms, months, year: yr };
+  const p = (db&&db.settings&&db.settings.profile)||{};
+  const hasPartner = p.accountType==='family' && p.partnerName && !p.hasSoloFamily;
+  const name1 = p.name || 'משתמש 1';
+  const name2 = p.partnerName || 'משתמש 2';
+  const FD = window._freedomState || (window._freedomState = {
+    showIntro: true,
+    scope: 'personal',
   });
 
-  return `
-  <div>
-    <!-- Header -->
-    <div class="card" style="background:linear-gradient(135deg,rgba(13,216,128,.09),rgba(13,216,128,.03));border-color:rgba(13,216,128,.25);margin-bottom:14px;padding:20px;text-align:center">
-      <div style="font-size:11px;color:#7b82a8;margin-bottom:6px;font-weight:600;letter-spacing:.08em">עצמאות כלכלית</div>
-      <div style="font-size:52px;font-weight:900;color:#0DD880;letter-spacing:-2px;line-height:1">${fd.freedomYear}</div>
-      <div style="font-size:13px;color:#9ca3af;margin-top:6px">
-        ${fd.monthsToFreedom >= 600
-          ? 'הגדל את ה-FCF החודשי כדי לחשב את מועד החופש'
-          : `עוד ${Math.floor(fd.yearsToFreedom)} שנים ו-${Math.round((fd.yearsToFreedom % 1) * 12)} חודשים`}
-      </div>
-
-      <!-- Progress bar -->
-      <div style="margin-top:16px;background:#17171B;border-radius:10px;height:12px;overflow:hidden">
-        <div style="height:100%;border-radius:10px;background:linear-gradient(90deg,#0DD880,#63b3ed);width:${fd.pct}%;transition:width 1s;box-shadow:0 0 8px rgba(13,216,128,.4)"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:#7b82a8">
-        <span>${sym}${Math.round(fd.currentNetWorth).toLocaleString('he-IL')}</span>
-        <span style="color:#0DD880;font-weight:700">${fd.pct}%</span>
-        <span>${sym}${Math.round(fd.targetNetWorth).toLocaleString('he-IL')}</span>
-      </div>
-    </div>
-
-    <!-- Key metrics -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      ${[
-        { icon:'💸', label:'FCF חודשי', val: llFmtSigned(fd.monthlyFCF), color: fd.monthlyFCF>=0?'#0DD880':'#f87171' },
-        { icon:'🎯', label:'יעד נכסים (כלל 4%)', val: llFmt(fd.targetNetWorth), color: '#f6ad55' },
-        { icon:'📈', label:'נכסים נוכחיים', val: llFmt(fd.currentNetWorth), color: '#63b3ed' },
-        { icon:'🔥', label:'שיעור חיסכון', val: fd.monthlyFCF>0 ? Math.round(fd.monthlyFCF/llGetMonthlyIncome()*100)+'%' : '0%', color: '#a78bfa' },
-      ].map(s=>`
-        <div class="card" style="padding:14px;margin-bottom:0">
-          <div style="font-size:18px;margin-bottom:4px">${s.icon}</div>
-          <div style="font-size:10px;color:#7b82a8;margin-bottom:4px">${s.label}</div>
-          <div style="font-size:18px;font-weight:800;color:${s.color}">${s.val}</div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Milestones timeline -->
-    <div class="card" style="margin-bottom:14px">
-      <div class="section-title">🗺 מפת דרכים לחופש</div>
-      ${milestones.map((ms,i) => {
-        const done = fd.currentNetWorth >= ms.target;
-        return `
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;${i<milestones.length-1?'border-bottom:1px solid rgba(255,255,255,.05)':''}">
-          <div style="width:36px;height:36px;border-radius:50%;background:${done?'rgba(13,216,128,.2)':'#17171B'};border:2px solid ${done?'#0DD880':'rgba(255,255,255,.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">
-            ${done ? '✓' : (i+1)}
-          </div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:${done?'#0DD880':'#e8eaf0'}">${ms.label}</div>
-            <div style="font-size:11px;color:#7b82a8">${sym}${Math.round(ms.target).toLocaleString('he-IL')}</div>
-          </div>
-          <div style="text-align:left">
-            <div style="font-size:14px;font-weight:800;color:${done?'#0DD880':'#f6ad55'}">${done ? 'הגעת! 🎉' : ms.year}</div>
-            ${!done ? `<div style="font-size:10px;color:#7b82a8">${ms.months < 600 ? 'עוד '+Math.floor(ms.months/12)+'y '+ms.months%12+'m' : '50y+'}</div>` : ''}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-
-    <!-- Expense → Time converter -->
-    <div class="card" style="margin-bottom:14px">
-      <div class="section-title">⏱ כל הוצאה = זמן חיים</div>
-      <div style="font-size:11px;color:#7b82a8;margin-bottom:12px">כל שקל שחסכת = פחות ימי עבודה נדרשים לחופש הכלכלי שלך</div>
-      ${topExp.length === 0
-        ? `<div class="empty">אין הוצאות החודש — הוסף הוצאות כדי לראות את ה"מחיר בזמן"</div>`
-        : topExp.map(e => {
-          const timeStr = llExpenseToTime(e.amount || 0, fd);
-          const isRecurring = e.paymentType === 'standing_order';
-          return `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-            <div style="width:36px;height:36px;border-radius:10px;background:#17171B;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
-              ${e.category === 'מזון' ? '🍔' : e.category === 'תחבורה' ? '🚗' : e.category === 'בריאות' ? '💊' : e.category === 'בידור' ? '🎬' : '💳'}
-            </div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</div>
-              <div style="font-size:10px;color:#7b82a8">${e.category||''}${isRecurring?' · קבוע':''}</div>
-            </div>
-            <div style="text-align:left;flex-shrink:0">
-              <div style="font-size:13px;font-weight:700;color:#f87171">${sym}${Math.round(e.amount||0).toLocaleString('he-IL')}</div>
-              ${timeStr ? `<div style="font-size:10px;color:#f6ad55;white-space:nowrap">⏱ ${timeStr}</div>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
-
-      <!-- Manual calculator -->
-      <div style="margin-top:14px;padding:12px;background:#17171B;border-radius:10px">
-        <div style="font-size:12px;color:#7b82a8;margin-bottom:8px;font-weight:600">🧮 מחשבון — הכנס סכום:</div>
-        <div style="display:flex;gap:8px">
-          <input id="freedomCalcInput" type="number" placeholder="סכום בש״ח"
-                 style="flex:1;background:#111113;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e8eaf0;font-family:'Heebo',sans-serif;font-size:14px;padding:9px 12px;outline:none;direction:ltr"/>
-          <button onclick="llCalcExpenseTime()"
-                  style="padding:9px 16px;background:#0DD880;border:none;border-radius:8px;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif">חשב</button>
+  // Intro screen — Rule 300
+  if(FD.showIntro) {
+    return `<div style="max-width:640px;margin:0 auto">
+      <div class="card" style="padding:28px;background:linear-gradient(135deg,rgba(13,216,128,.07),rgba(13,216,128,.02));border-color:rgba(13,216,128,.25)">
+        <div style="text-align:center;margin-bottom:22px">
+          <div style="font-size:36px;margin-bottom:10px">◎</div>
+          <div style="font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px">עצמאות כלכלית</div>
+          <div style="font-size:13px;color:#7b82a8">מבוסס על חוק 300 ומחקר טריניטי</div>
         </div>
-        <div id="freedomCalcResult" style="margin-top:8px;font-size:13px;color:#f6ad55;display:none"></div>
+
+        <div class="card" style="background:#17171B;border-color:rgba(255,255,255,.07);margin-bottom:16px;padding:20px">
+          <div style="font-size:15px;font-weight:700;color:#0DD880;margin-bottom:12px">מה הוא חוק ה-300?</div>
+          <div style="font-size:13px;color:#c8cce0;line-height:1.8">
+            חוק ה-300 הוא גרסה פשוטה ופרקטית של <strong style="color:#e8eaf0">מחקר טריניטי</strong> המפורסם. הוא עוזר לך להבין מהו הסכום המדויק הנדרש כדי שתוכל לחיות מהתשואה של כספך בלבד — מבלי לעבוד ומבלי שהקרן תישחק.
+          </div>
+
+          <div style="margin:16px 0;padding:14px 16px;background:rgba(13,216,128,.08);border-radius:12px;border:1px solid rgba(13,216,128,.2);text-align:center">
+            <div style="font-size:12px;color:#7b82a8;margin-bottom:6px">הנוסחה</div>
+            <div style="font-size:18px;font-weight:800;color:#0DD880">סכום הפרישה = ₪ ההוצאה החודשית × 300</div>
+          </div>
+
+          <div style="font-size:13px;color:#c8cce0;line-height:1.9">
+            <strong style="color:#e8eaf0">דוגמה:</strong> אם אתה זקוק ל-₪10,000 בחודש כדי לכסות את כל הוצאותיך —<br/>
+            <span style="color:#0DD880;font-weight:700">₪10,000 × 300 = ₪3,000,000</span> — זהו "סכום החופש" שלך.<br/><br/>
+            <strong style="color:#e8eaf0">כיצד זה עובד?</strong><br/>
+            משיכה שנתית של <strong style="color:#f6ad55">4% מההון</strong> (= 12 קצבאות של ₪10,000) צפויה להספיק לעשרות שנים, תוך התחשבות באינפלציה ובתנודות השוק.<br/><br/>
+            <strong style="color:#e8eaf0">חשוב להבין — המשיכה היא הצמדה לסכום ראשוני:</strong><br/>
+            בשנה הראשונה: משיכה של 4% בדיוק משווי התיק ביום הפרישה.<br/>
+            בשנים הבאות: הסכום שנמשך בשנה הקודמת + שיעור האינפלציה — ללא קשר למצב השוק.<br/>
+            <span style="color:#7b82a8">דוגמה: משכת ₪100,000 בשנה 1, אינפלציה 3% → תמשוך ₪103,000 בשנה 2.</span>
+          </div>
+        </div>
+
+        <button onclick="window._freedomState.showIntro=false;render()"
+          style="width:100%;padding:14px;background:#0DD880;border:none;border-radius:12px;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;transition:opacity .2s"
+          onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+          הבנתי — עבור למחשבון
+        </button>
+      </div>
+    </div>`;
+  }
+
+  // ── Main Calculator Screen ──
+  const sym = db ? getCurrencySymbol() : '₪';
+  const cur = db ? getCurrency() : 'ILS';
+
+  // User scope selector
+  const scopes = [
+    {id:'personal', label: hasPartner ? name1 : 'אישי'},
+    ...(hasPartner ? [{id:'personal2', label: name2}] : []),
+  ];
+
+  return `<div style="max-width:680px;margin:0 auto">
+
+    <!-- Back to intro -->
+    <button onclick="window._freedomState.showIntro=true;render()"
+      style="background:none;border:none;color:#7b82a8;font-size:13px;cursor:pointer;font-family:'Heebo',sans-serif;padding:0 0 14px 0;display:flex;align-items:center;gap:4px">
+      → חזרה להסבר
+    </button>
+
+    <!-- Scope selector -->
+    ${scopes.length > 1 ? `<div style="display:flex;gap:8px;margin-bottom:16px">
+      ${scopes.map(s=>`<button onclick="window._freedomState.scope='${s.id}';render()"
+        style="padding:8px 18px;border-radius:20px;border:1px solid ${FD.scope===s.id?'rgba(13,216,128,.4)':'rgba(255,255,255,.08)'};background:${FD.scope===s.id?'rgba(13,216,128,.12)':'transparent'};color:${FD.scope===s.id?'#0DD880':'#7b82a8'};font-size:13px;font-weight:${FD.scope===s.id?700:400};cursor:pointer;font-family:'Heebo',sans-serif">${s.label}</button>`).join('')}
+    </div>` : ''}
+
+    <!-- Calculator card -->
+    <div class="card" style="margin-bottom:14px;padding:22px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:18px">מחשבון ריבית דריבית</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+
+        <!-- Currency -->
+        <div style="grid-column:1/-1">
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">מטבע</div>
+          <select id="fc_currency" style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:14px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none">
+            ${Object.entries(typeof CURRENCIES!=='undefined'?CURRENCIES:{ILS:{symbol:'₪',name:'שקל',flag:'🇮🇱'},USD:{symbol:'$',name:'דולר',flag:'🇺🇸'},EUR:{symbol:'€',name:'יורו',flag:'🇪🇺'}}).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${v.flag} ${v.symbol} ${v.name}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">סכום פתיחה ראשוני</div>
+          <input id="fc_initial" type="number" inputmode="decimal" placeholder="0"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">הפקדה חודשית</div>
+          <input id="fc_monthly" type="number" inputmode="decimal" placeholder="0"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">ריבית שנתית (%)</div>
+          <input id="fc_rate" type="number" inputmode="decimal" placeholder="7" value="7"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">מספר שנות הפקדה</div>
+          <input id="fc_years" type="number" inputmode="decimal" placeholder="20" value="20"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">דמי ניהול מהפקדה (%)</div>
+          <input id="fc_fee_deposit" type="number" inputmode="decimal" placeholder="0" value="0"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:6px">דמי ניהול מצבירה (%)</div>
+          <input id="fc_fee_accum" type="number" inputmode="decimal" placeholder="0" value="0"
+            style="width:100%;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+            oninput="updateFreedomCalc()"/>
+        </div>
+
       </div>
     </div>
 
-    <!-- Insight card -->
-    <div class="card" style="background:rgba(13,216,128,.05);border-color:rgba(13,216,128,.2)">
-      <div style="font-size:13px;line-height:1.7;color:#c8cce0">
-        💡 <strong>תובנה:</strong>
-        ${fd.monthlyFCF > 0
-          ? `בקצב הנוכחי של ${sym}${Math.round(fd.monthlyFCF).toLocaleString('he-IL')} FCF חודשי — תגיע לעצמאות כלכלית ב-${fd.freedomYear}. כל ${sym}1,000 נוספים בחיסכון חודשי מקצרים את הדרך ב-${Math.round(12000/(fd.monthlyFCF||1)*12)} חודשים.`
-          : `FCF שלילי מרחיק אותך מעצמאות כלכלית. <strong style="color:#f87171">הפחת הוצאות ב-${sym}${Math.round(Math.abs(fd.monthlyFCF)+2000).toLocaleString('he-IL')} כדי להתחיל את המסע.</strong>`}
+    <!-- Results card -->
+    <div class="card" id="fc_results" style="padding:22px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#e8eaf0">תוצאות</div>
+      <div id="fc_output" style="color:#7b82a8;font-size:13px;text-align:center;padding:20px 0">
+        הזן נתונים לחישוב
       </div>
     </div>
+
+    <!-- Rule-300 quick calc -->
+    <div class="card" style="padding:20px;background:rgba(13,216,128,.04);border-color:rgba(13,216,128,.15)">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">מחשבון חוק ה-300 — מהי ההוצאה החודשית שלך בפרישה?</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="fc_monthly_expense" type="number" inputmode="decimal" placeholder="10,000"
+          style="flex:1;background:#17171B;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;color:#e8eaf0;font-size:15px;padding:10px 12px;font-family:'Heebo',sans-serif;outline:none;direction:ltr"
+          oninput="calc300()"/>
+        <span style="color:#7b82a8;font-size:13px;white-space:nowrap">× 300 =</span>
+        <div id="fc_300_result" style="font-size:18px;font-weight:800;color:#0DD880;white-space:nowrap;min-width:120px">—</div>
+      </div>
+      <div style="font-size:11px;color:#4a5068;margin-top:8px">זהו יעד ההון הנדרש לעצמאות כלכלית לפי כלל ה-4%</div>
+    </div>
+
   </div>`;
 }
 
-window.llCalcExpenseTime = function() {
-  const el = document.getElementById('freedomCalcInput');
-  const res = document.getElementById('freedomCalcResult');
-  if(!el || !res) return;
-  const amount = parseFloat(el.value);
-  if(!amount || amount <= 0) return;
-  const fd = llCalcFreedomData();
-  const timeStr = llExpenseToTime(amount, fd);
-  const sym = db ? getCurrencySymbol() : '₪';
-  res.style.display = 'block';
-  if(timeStr) {
-    res.innerHTML = `${sym}${amount.toLocaleString('he-IL')} = <strong style="color:#f6ad55">${timeStr}</strong> מהחופש שלך`;
-  } else {
-    res.innerHTML = `<span style="color:#7b82a8">הגדל את ה-FCF החודשי תחילה</span>`;
-  }
+window.calc300 = function() {
+  const val = parseFloat(document.getElementById('fc_monthly_expense')?.value)||0;
+  const res = document.getElementById('fc_300_result');
+  if(!res) return;
+  const sym = typeof getCurrencySymbol==='function' ? getCurrencySymbol() : '₪';
+  res.textContent = val > 0 ? sym + (val*300).toLocaleString('he-IL') : '—';
 };
 
-// ══════════════════════════════════════════════════════════════
-// END LOGIC LAYER
-// ══════════════════════════════════════════════════════════════
+window.updateFreedomCalc = function() {
+  const g = id => parseFloat(document.getElementById(id)?.value)||0;
+  const initial    = g('fc_initial');
+  const monthly    = g('fc_monthly');
+  const annualRate = g('fc_rate') / 100;
+  const years      = g('fc_years');
+  const feeDeposit = g('fc_fee_deposit') / 100;
+  const feeAccum   = g('fc_fee_accum') / 100;
+  const sym        = (document.getElementById('fc_currency')?.selectedOptions[0]?.textContent||'').match(/[₪$€£]/)?.[0] || '₪';
+
+  if(years <= 0 || annualRate < 0) return;
+
+  const months = years * 12;
+  const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1;
+
+  // Gross calculations (no fees)
+  let grossBalance  = initial;
+  let totalDeposits = initial;
+  for(let i = 0; i < months; i++) {
+    grossBalance = grossBalance * (1 + monthlyRate) + monthly;
+    totalDeposits += monthly;
+  }
+  const grossProfit = grossBalance - totalDeposits;
+
+  // With fees
+  const monthlyFeeAccum   = Math.pow(1 + feeAccum, 1/12) - 1;
+  const monthlyDepositFee = monthly * feeDeposit;
+  const effectiveMonthly  = monthly - monthlyDepositFee;
+
+  let netBalance = initial;
+  let totalDepositFees = 0;
+  for(let i = 0; i < months; i++) {
+    netBalance = netBalance * (1 + monthlyRate - monthlyFeeAccum) + effectiveMonthly;
+    totalDepositFees += monthlyDepositFee;
+  }
+  const totalAccumFees = grossBalance - netBalance - totalDepositFees;
+  const fmt = n => sym + Math.round(Math.max(0,n)).toLocaleString('he-IL');
+
+  const rows = [
+    {label:'סכום הפקדה כולל',          val:fmt(totalDeposits),    color:'#e8eaf0'},
+    {label:'רווח (ריבית דריבית)',        val:fmt(grossProfit),       color:'#0DD880'},
+    {label:'דמי ניהול מהפקדה',          val:fmt(totalDepositFees),  color:'#f87171'},
+    {label:'דמי ניהול מצבירה',          val:fmt(Math.max(0,totalAccumFees)), color:'#f87171'},
+    null,
+    {label:'סכום עתידי ללא דמי ניהול', val:fmt(grossBalance),      color:'#0DD880', big:true},
+    {label:'סכום עתידי בניכוי דמי ניהול', val:fmt(netBalance),     color:'#f6ad55', big:true},
+  ];
+
+  const rule300Gross = Math.round(grossBalance / 300);
+  const rule300Net   = Math.round(netBalance / 300);
+
+  const el = document.getElementById('fc_output');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0">
+      ${rows.map(r => r === null
+        ? '<div style="height:1px;background:rgba(255,255,255,.06);margin:12px 0"></div>'
+        : `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="font-size:${r.big?'14':'13'}px;font-weight:${r.big?700:400};color:${r.big?'#e8eaf0':'#9ca3af'}">${r.label}</span>
+            <span style="font-size:${r.big?'18':'14'}px;font-weight:${r.big?800:600};color:${r.color}">${r.val}</span>
+          </div>`).join('')}
+    </div>
+    <div style="margin-top:16px;padding:14px;background:rgba(13,216,128,.06);border-radius:10px;border:1px solid rgba(13,216,128,.15)">
+      <div style="font-size:11px;color:#7b82a8;margin-bottom:8px;font-weight:600">לפי חוק ה-300 — הקצבה החודשית האפשרית:</div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:3px">ללא דמי ניהול</div>
+          <div style="font-size:20px;font-weight:800;color:#0DD880">${sym}${rule300Gross.toLocaleString('he-IL')}/חודש</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#7b82a8;margin-bottom:3px">בניכוי דמי ניהול</div>
+          <div style="font-size:20px;font-weight:800;color:#f6ad55">${sym}${rule300Net.toLocaleString('he-IL')}/חודש</div>
+        </div>
+      </div>
+    </div>`;
+};
 
 
-// ══════════════════════════════════════════════════════════════
-// ADMIN CONFIRM DIALOG (shared)
-// ══════════════════════════════════════════════════════════════
 function showAdminConfirmDialog(message, onConfirm, onCancel) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -6205,6 +6351,31 @@ function setLang(code) {
   if(L.dir === 'ltr') document.body.classList.add('ltr-mode');
 })();
 
+function openLangModal() {
+  const existing = document.getElementById('langModal');
+  if(existing) { existing.remove(); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'langModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#111113;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px 22px;width:320px;max-width:90vw;font-family:Heebo,sans-serif;direction:rtl';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:15px;font-weight:700;margin-bottom:16px;text-align:center;color:#e8eaf0';
+  title.textContent = 'בחר שפה / Select Language';
+  box.appendChild(title);
+  Object.entries(LANGS).forEach(([code, L]) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:10px;border:1px solid ${_lang===code?'rgba(13,216,128,.3)':'rgba(255,255,255,.06)'};background:${_lang===code?'rgba(13,216,128,.08)':'transparent'};color:${_lang===code?'#0DD880':'#e8eaf0'};font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:6px;transition:all .15s`;
+    btn.innerHTML = `<span style="font-size:20px">${L.flag}</span><span style="flex:1;text-align:right">${L.name}</span>${_lang===code?'<span style="color:#0DD880">✓</span>':''}`;
+    btn.onclick = () => { setLang(code); overlay.remove(); if(typeof render==='function') render(); };
+    box.appendChild(btn);
+  });
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+window.openLangModal = openLangModal;
+
 function buildLangSelector(small=false) {
   return `<div class="lang-selector" style="${small?'margin-bottom:10px':''}">
     ${Object.entries(LANGS).map(([code,L])=>`
@@ -6236,7 +6407,7 @@ function buildApp(){
     {id:'annual',    icon:'◫',   label:t('annual')},
     {id:'report',    icon:'▦',   label:t('reports')},
     {id:'ai',        icon:'✦',   label:t('advisor')},
-    {id:'freedom',   icon:'◎',   label:t('freedom')},
+    {id:'freedom',   icon:'◎',   label:'עצמאות כלכלית'},
     {id:'settings',  icon:'⚙',   label:t('settings')},
     ...(isAdmin() ? [{id:'admin',icon:'★',label:'ניהול'}] : []),
   ].filter(tab => !tabHidden(tab.id));
@@ -6282,19 +6453,27 @@ function buildApp(){
     </div>
   </aside>`;
 
+  const expenseTabs = ['personal','personal2','family','income'];
+  const showAddButtons = expenseTabs.includes(S.tab);
+  const showExportImport = S.tab === 'settings' || S.tab === 'report';
+
   const topbar = `<header class="app-topbar">
-    <div class="topbar-left">
-      <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" data-action="open-variable" data-type="personal">${t('addExpense')}</button>
-      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;border:1px solid rgba(255,255,255,.08)" data-action="open-income">${t('addIncome')}</button>
+    <div class="topbar-left" style="display:flex;align-items:center;gap:6px">
+      ${showAddButtons ? `
+        <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" data-action="open-variable" data-type="${S.tab==='income'?'personal':S.tab}">+ הוצאה</button>
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;border:1px solid rgba(255,255,255,.08)" data-action="open-income">+ הכנסה</button>
+      ` : ''}
+      ${showExportImport ? `
+        <button class="btn btn-ghost" id="exportBtn" style="padding:7px 12px;font-size:12px;border:1px solid rgba(255,255,255,.06)">ייצא</button>
+        <button class="btn btn-ghost" id="importBtn" style="padding:7px 12px;font-size:12px;border:1px solid rgba(255,255,255,.06)">ייבא</button>
+        <input type="file" id="importFile" accept=".json" style="display:none"/>
+      ` : '<input type="file" id="importFile" accept=".json" style="display:none"/>'}
     </div>
     <div class="topbar-right">
       ${showMonth ? `<div class="month-bar-inline">
         <select class="year-sel" id="ySel">${[...Array(12)].map((_,i)=>2020+i).map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}</select>
         ${MONTHS.map((m,i)=>`<button class="mbtn${i===S.month?' active':''}" data-month="${i}">${m.slice(0,3)}</button>`).join('')}
-      </div>` : `<div class="topbar-title">${NAV_TABS.find(t=>t.id===S.tab)?.label||''}</div>`}
-      <button class="btn btn-ghost" id="exportBtn" title="ייצא" style="padding:7px 12px;font-size:13px;border:1px solid rgba(255,255,255,.06)">↑ ייצא</button>
-      <button class="btn btn-ghost" id="importBtn" title="ייבא" style="padding:7px 12px;font-size:13px;border:1px solid rgba(255,255,255,.06)">↓ ייבא</button>
-      <input type="file" id="importFile" accept=".json" style="display:none"/>
+      </div>` : `<div class="topbar-title">${NAV_TABS.find(tb=>tb.id===S.tab)?.label||''}</div>`}
     </div>
   </header>`;
 
@@ -6329,6 +6508,15 @@ function buildApp(){
 // ══════════════════════════════════════════════════════════════
 // UNIFIED AI ADVISOR TAB
 // ══════════════════════════════════════════════════════════════
+const ADV_SUGGESTIONS_LIST = [
+  'איך אני עומד מבחינה פיננסית החודש?',
+  'מה ההוצאה הגדולה ביותר שאפשר לצמצם?',
+  'כמה חודשי מחייה יש לי בחיסכון?',
+  'מה הציון שלי ואיך אשפר אותו?',
+  'תן לי טיפ אחד להגדלת החיסכון',
+  'אם אגדיל הפקדה לחיסכון ב-500 ₪ — מה ההשפעה?',
+];
+
 let ADV = {
   messages: [],
   loading: false,
@@ -6416,6 +6604,7 @@ async function advSend(text) {
   setTimeout(()=>{ const el=document.getElementById('advMessages'); if(el) el.scrollTop=el.scrollHeight; }, 60);
 }
 
+window.advSend = advSend;
 window.advSendBtn = function() {
   const el = document.getElementById('advInput');
   if(!el||!el.value.trim()) return;
@@ -6430,14 +6619,7 @@ function buildAdvisorTab() {
   const isFamily = p.accountType==='family';
   const hasPartner = isFamily && name2 && !p.hasSoloFamily;
 
-  const SUGGESTIONS = [
-    'איך אני עומד מבחינה פיננסית החודש?',
-    'מה ההוצאה הגדולה ביותר שאפשר לצמצם?',
-    'כמה חודשי מחייה יש לי בחיסכון?',
-    'מה הציון שלי ואיך אשפר אותו?',
-    'תן לי טיפ אחד להגדלת החיסכון',
-    'אם אגדיל הפקדה לחיסכון ב-500 ₪ — מה ההשפעה?',
-  ];
+  const SUGGESTIONS = ADV_SUGGESTIONS_LIST;
 
   const scopes = [
     {id:'all', label:'כולם'},
