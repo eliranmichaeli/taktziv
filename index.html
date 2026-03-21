@@ -466,31 +466,147 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
 .header{display:none!important;}
 .backup-bar{display:none!important;}
 
-/* Mobile: hide sidebar, show bottom nav */
+/* ── MOBILE — bottom tab bar ──────────────────────── */
 @media(max-width:768px){
+  /* Sidebar → bottom tab bar */
   .app-sidebar{
-    position:fixed;bottom:0;top:auto;right:0;left:0;width:100%;
-    flex-direction:row;height:58px;border-left:none;
-    border-top:1px solid rgba(255,255,255,.06);
+    position:fixed;bottom:0;top:auto;right:0;left:0;
+    width:100%;height:62px;
+    flex-direction:row;
+    border-left:none;border-top:1px solid rgba(255,255,255,.07);
+    background:#09090B;
     overflow-x:auto;overflow-y:hidden;
-    padding:0 6px;align-items:center;
-    gap:2px;
+    padding:0 4px;
+    align-items:center;
+    z-index:200;
+    -webkit-overflow-scrolling:touch;
   }
-  .sidebar-brand,.sidebar-divider,.sidebar-footer{display:none;}
-  .sidebar-nav{flex-direction:row;padding:0;gap:0;flex:1;overflow-x:auto;}
+  .app-sidebar::-webkit-scrollbar{display:none;}
+
+  /* Hide desktop-only sidebar elements */
+  .sidebar-brand,.sidebar-divider,.sidebar-footer{display:none!important;}
+
+  .sidebar-nav{
+    flex-direction:row;padding:0;gap:0;
+    flex:1;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    align-items:center;
+  }
   .sidebar-nav::-webkit-scrollbar{display:none;}
+
   .snav-btn{
-    flex-direction:column;gap:2px;padding:6px 8px;
-    font-size:10px;min-width:54px;border-radius:8px;
-    border:none!important;
+    flex-direction:column;gap:2px;
+    padding:6px 10px;min-width:56px;
+    font-size:10px;font-weight:500;
+    border:none!important;background:transparent!important;
+    color:#6b7280;border-radius:10px;
   }
-  .snav-btn.active{background:transparent;color:#0DD880;}
-  .snav-btn.active:hover{box-shadow:none;}
-  .snav-btn:hover{background:transparent;color:#e8eaf0;box-shadow:none;}
+  .snav-btn.active{color:#0DD880!important;}
+  .snav-btn:hover{background:transparent!important;box-shadow:none!important;}
+  .snav-icon{font-size:20px;line-height:1.2;}
+
+  /* Main content shifts */
+  .app-main{margin-right:0!important;margin-left:0!important;padding-bottom:72px;}
+
+  /* Topbar compact */
+  .app-topbar{
+    padding:8px 14px;
+    gap:6px;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+  }
+  .app-topbar::-webkit-scrollbar{display:none;}
+  .topbar-left,.topbar-right{flex-shrink:0;}
+
+  /* Month bar scrollable inside topbar */
+  .month-bar-inline{
+    max-width:calc(100vw - 120px);
+    overflow-x:auto;
+    gap:4px;
+  }
+  .mbtn{font-size:10px;padding:4px 8px;}
+  .year-sel{font-size:11px;padding:4px 7px;}
+
+  /* Content area */
+  .app-content{
+    padding:12px 12px 16px;
+    max-width:100%;
+  }
+
+  /* Cards */
+  .card{
+    padding:14px!important;
+    border-radius:14px!important;
+    margin-bottom:10px!important;
+  }
+
+  /* Stat grid 2-col */
+  .stat-grid{grid-template-columns:1fr 1fr!important;gap:8px!important;}
+  .stat-card{padding:12px 10px!important;}
+  .stat-val{font-size:18px!important;}
+
+  /* Grid2 single col */
+  .grid2{grid-template-columns:1fr!important;}
+
+  /* Tables scroll */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;}
+  .tbl th,.tbl td{padding:7px 8px;font-size:12px;}
+
+  /* Modal — full bottom sheet */
+  .overlay{align-items:flex-end;}
+  .modal{
+    border-radius:20px 20px 0 0!important;
+    max-height:90vh!important;
+    padding:20px 16px!important;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 24px)!important;
+  }
+  .modal-title{font-size:16px!important;margin-bottom:14px!important;}
+  .input{font-size:16px!important;padding:12px 13px!important;}
+
+  /* Buttons */
+  .btn-primary,.btn-ghost{padding:10px 14px!important;font-size:13px!important;}
+  .btn-del,.btn-edt{padding:7px 10px!important;font-size:12px!important;}
+
+  /* Auth screen */
+  .auth-screen{padding:16px!important;align-items:flex-start!important;padding-top:max(52px,env(safe-area-inset-top))!important;}
+  .auth-box{padding:22px 18px!important;border-radius:20px!important;}
+  .auth-input{font-size:16px!important;padding:13px 14px!important;}
+  .auth-btn{font-size:16px!important;padding:14px!important;}
+
+  /* Sections */
+  .section-title{font-size:10px!important;}
+  .add-row{flex-direction:row;align-items:center;}
+
+  /* Topbar hide text on small buttons */
+  .topbar-left .btn-ghost span,
+  .topbar-right .btn-ghost span{display:none;}
+
+  /* Summary table in dashboard */
+  .summary-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+  /* Hide year selector in topbar on very small screens */
+}
+
+/* Extra small phones */
+@media(max-width:390px){
+  .snav-btn{min-width:48px;padding:5px 7px;font-size:9px;}
   .snav-icon{font-size:18px;}
-  .app-main{margin-right:0;padding-bottom:68px;}
-  .app-topbar{flex-wrap:wrap;padding:8px 14px;gap:6px;}
-  .app-content{padding:12px 12px 20px;}
+  .app-content{padding:10px 10px 14px;}
+  .card{padding:12px!important;border-radius:12px!important;}
+}
+
+/* LTR mobile fix */
+@media(max-width:768px){
+  body.ltr-mode .app-sidebar{right:0;left:0;}
+  body.ltr-mode .app-main{margin-right:0;margin-left:0;}
+}
+
+/* Safe area (iPhone notch/home bar) */
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  @media(max-width:768px){
+    .app-sidebar{height:calc(62px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);}
+    .app-main{padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+  }
 }
 
 /* LTR override for non-Hebrew/Arabic */
@@ -532,69 +648,12 @@ body.ltr-mode .snav-btn{text-align:left;}
 
 <!-- Auth screen -->
 <!-- ═══ LANDING ═══ -->
-<div id="landingScreen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% -5%,rgba(13,216,128,0.07) 0%,transparent 60%),#09090B;z-index:500;overflow:hidden;font-family:Heebo,sans-serif">
-  <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;max-width:420px;margin:0 auto;box-sizing:border-box">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="width:54px;height:54px;background:rgba(13,216,128,0.15);border:1px solid rgba(13,216,128,0.35);border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px">💰</div>
-      <div style="font-size:30px;font-weight:900;color:#f0f2ff;letter-spacing:-1.5px">תקציב</div>
-      <div style="font-size:13px;color:#5a6080;margin-top:6px;letter-spacing:0.3px" data-i18n="tagline">הכסף שלך, בשליטה שלך</div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:100%;margin-bottom:24px">
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">📊</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">מעקב<br>הוצאות</div></div>
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">💸</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">תזרים<br>מזומנים</div></div>
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">🤖</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">יועץ AI<br>אישי</div></div>
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">🏦</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">תוכניות<br>חיסכון</div></div>
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">👫</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">חשבון<br>משפחתי</div></div>
-      <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 6px;text-align:center"><div style="font-size:17px;margin-bottom:4px">📈</div><div style="font-size:10px;font-weight:700;color:#9ca3af;line-height:1.4">דוחות<br>וגרפים</div></div>
-    </div>
-    <div style="font-size:11px;color:#3a3e55;margin-bottom:22px;text-align:center;letter-spacing:0.5px">תכנן · עקוב · חסוך · השג את המטרות שלך</div>
-    <div id="landingLangBar" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:18px">
-      <button onclick="window.setLang('he')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇮🇱 עברית</button>
-      <button onclick="window.setLang('en')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇺🇸 English</button>
-      <button onclick="window.setLang('ru')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇷🇺 Русский</button>
-      <button onclick="window.setLang('ar')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇸🇦 العربية</button>
-      <button onclick="window.setLang('de')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇩🇪 Deutsch</button>
-      <button onclick="window.setLang('fr')" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px" onmouseover="this.style.background='rgba(13,216,128,.12)';this.style.color='#0DD880';this.style.borderColor='rgba(13,216,128,.3)'" onmouseout="this.style.background='transparent';this.style.color='#9ca3af';this.style.borderColor='rgba(255,255,255,.12)'">🇫🇷 Français</button>
-    </div>
-    <div style="width:100%;display:flex;flex-direction:column;gap:10px">
-      <button id="landingNewBtn" style="width:100%;padding:15px;background:#0DD880;border:none;border-radius:12px;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif;box-shadow:0 4px 20px rgba(13,216,128,.3);transition:opacity .2s">משתמש חדש</button>
-      <button id="landingExistBtn" style="width:100%;padding:14px;background:transparent;border:1px solid #1e2135;border-radius:12px;color:#6c6f8a;font-size:14px;font-weight:600;cursor:pointer;font-family:Heebo,sans-serif">משתמש רשום</button>
-    </div>
-  </div>
-</div>
+<div id="landingScreen" style="display:none;position:fixed;inset:0;z-index:500;overflow-y:auto;"></div>
 
-<!-- ═══ PRICING ═══ -->
-<div id="pricingScreen" style="display:none;position:fixed;inset:0;background:#09090B;z-index:501;overflow:hidden;font-family:Heebo,sans-serif">
-  <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;max-width:420px;margin:0 auto;box-sizing:border-box">
-    <div style="width:100%;margin-bottom:20px"><button id="pricingBackBtn" style="background:none;border:none;color:#454860;font-size:13px;cursor:pointer;font-family:Heebo,sans-serif;padding:0">← חזרה</button></div>
-    <div style="text-align:center;margin-bottom:22px">
-      <div style="font-size:22px;font-weight:900;color:#f0f2ff">בחר תוכנית</div>
-      <div style="font-size:12px;color:#454860;margin-top:5px">גישה מלאה — חינם לגמרי בשלב הבטא</div>
-    </div>
-    <div style="width:100%;background:#111113;border:1px solid rgba(13,216,128,.35);border-radius:16px;padding:22px;margin-bottom:12px;box-sizing:border-box">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
-        <div><div style="font-size:10px;color:#0DD880;font-weight:800;letter-spacing:2px;margin-bottom:5px">BETA</div><div style="font-size:28px;font-weight:900;color:#fff">חינם</div><div style="font-size:11px;color:#454860;margin-top:3px">ללא כרטיס אשראי</div></div>
-        <div style="background:rgba(13,216,128,.15);border:1px solid rgba(13,216,128,.25);border-radius:8px;padding:5px 10px;font-size:10px;color:#0DD880;font-weight:700">גישה מלאה</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:18px">
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> מעקב הוצאות</div>
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> תזרים מזומנים</div>
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> יועץ AI</div>
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> חשבון משפחתי</div>
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> תוכניות חיסכון</div>
-        <div style="font-size:11px;color:#8b8fa8"><span style="color:#68d391">✓</span> גיבוי בענן</div>
-      </div>
-      <button id="pricingStartBtn" style="width:100%;padding:14px;background:#0DD880;border:none;border-radius:10px;color:#000;font-size:14px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif">התחל עכשיו — בחינם</button>
-    </div>
-    <div style="width:100%;background:#0e1120;border:1px solid #1a1d30;border-radius:14px;padding:16px;box-sizing:border-box;opacity:0.4;text-align:center">
-      <div style="font-size:10px;color:#454860;font-weight:800;letter-spacing:2px;margin-bottom:4px">PRO — בקרוב</div>
-      <div style="font-size:20px;font-weight:900;color:#454860">₪X<span style="font-size:11px">/חודש</span></div>
-      <div style="font-size:11px;color:#353748;margin-top:4px">ייצוא · תמיכה · תכונות מתקדמות</div>
-    </div>
-  </div>
-</div>
+<!-- pricing rebuilt by JS -->
+<div id="pricingScreen" style="display:none;position:fixed;inset:0;z-index:501;overflow-y:auto;"></div>
 
-<div class="auth-screen" id="authScreen" style="display:none">
+<div class="auth-screen"creen" id="authScreen" style="display:none">
   <div class="auth-box">
     <button id="authBackBtn" style="background:none;border:none;color:#7b82a8;font-size:13px;cursor:pointer;margin-bottom:10px;font-family:Heebo,sans-serif;display:none">← חזרה</button>
     <div class="auth-logo">
@@ -2139,8 +2198,8 @@ function buildDash(){
       <div style="font-size:12px;color:#7b82a8">${MONTHS[m]} ${y}</div>
       <div style="font-size:14px;font-weight:700;color:#e8eaf0">סיכום חודשי</div>
     </div>
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;min-width:400px">
+    <div class="summary-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table style="width:100%;border-collapse:collapse;min-width:360px">
         <thead>
           <tr style="background:rgba(255,255,255,.02)">
             <th style="padding:10px;text-align:right;font-size:11px;color:#7b82a8;font-weight:600">חשבון</th>
@@ -6588,9 +6647,9 @@ function buildApp(){
       ` : '<input type="file" id="importFile" accept=".json" style="display:none"/>'}
     </div>
     <div class="topbar-right">
-      ${showMonth ? `<div class="month-bar-inline">
-        <select class="year-sel" id="ySel">${[...Array(12)].map((_,i)=>2020+i).map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}</select>
-        ${MONTHS.map((m,i)=>`<button class="mbtn${i===S.month?' active':''}" data-month="${i}">${m.slice(0,3)}</button>`).join('')}
+      ${showMonth ? `<div class="month-bar-inline" style="display:flex;align-items:center;gap:4px;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+        <select class="year-sel" id="ySel" style="flex-shrink:0">${[...Array(12)].map((_,i)=>2020+i).map(y=>`<option value="${y}"${y===S.year?' selected':''}>${y}</option>`).join('')}</select>
+        ${MONTHS.map((m,i)=>`<button class="mbtn${i===S.month?' active':''}" data-month="${i}" style="flex-shrink:0">${m.slice(0,3)}</button>`).join('')}
       </div>` : `<div class="topbar-title">${NAV_TABS.find(tb=>tb.id===S.tab)?.label||''}</div>`}
     </div>
   </header>`;
@@ -7013,25 +7072,212 @@ window._handleDeposit = async function(action, b) {
   return false;
 };
 
-// Patch renderLandingLang for language-aware landing
-function renderLandingLang() {
-  const L = LANGS[_lang]||LANGS.he;
-  const dir = L.dir;
-  const landingEl = document.getElementById('landingScreen');
-  if(!landingEl||landingEl.style.display==='none') return;
-  // Update button texts
-  const newBtn = document.getElementById('landingNewBtn');
-  const existBtn = document.getElementById('landingExistBtn');
-  if(newBtn) newBtn.textContent = L.newUser;
-  if(existBtn) existBtn.textContent = L.existingUser;
-  // Update tagline
-  const tagEl = landingEl.querySelector('[data-i18n="tagline"]');
-  if(tagEl) tagEl.textContent = L.appTagline;
-  landingEl.dir = dir;
+
+// ══════════════════════════════════════════════════════════════
+// DYNAMIC SCREEN BUILDERS (i18n-aware)
+// ══════════════════════════════════════════════════════════════
+
+const FEATURE_KEYS = [
+  { icon:'📊', he:'מעקב הוצאות',    en:'Expense Tracking', ru:'Расходы',       ar:'تتبع النفقات',    de:'Ausgaben',        fr:'Dépenses'      },
+  { icon:'💸', he:'תזרים מזומנים', en:'Cash Flow',        ru:'Денежный поток',ar:'التدفق النقدي',   de:'Cashflow',        fr:'Trésorerie'    },
+  { icon:'🤖', he:'יועץ AI אישי',  en:'AI Advisor',       ru:'AI Советник',   ar:'مستشار AI',       de:'KI-Berater',      fr:'Conseiller IA' },
+  { icon:'🏦', he:'תוכניות חיסכון',en:'Savings Plans',    ru:'Накопления',    ar:'خطط الادخار',     de:'Sparplan',        fr:'Épargne'       },
+  { icon:'👫', he:'חשבון משפחתי',  en:'Family Account',   ru:'Семейный счёт', ar:'حساب عائلي',      de:'Familienkonto',   fr:'Famille'       },
+  { icon:'📈', he:'דוחות וגרפים',  en:'Reports & Charts', ru:'Отчёты',        ar:'التقارير',        de:'Berichte',        fr:'Rapports'      },
+];
+const PLAN_FEATURES_KEYS = [
+  { he:'מעקב הוצאות',   en:'Expense tracking',  ru:'Отслеживание расходов', ar:'تتبع النفقات',    de:'Ausgaben-Tracking', fr:'Suivi dépenses' },
+  { he:'תזרים מזומנים',en:'Cash flow',          ru:'Денежный поток',        ar:'التدفق النقدي',   de:'Cashflow',          fr:'Trésorerie'     },
+  { he:'יועץ AI',       en:'AI advisor',         ru:'AI-советник',           ar:'مستشار AI',       de:'KI-Berater',        fr:'Conseiller IA'  },
+  { he:'חשבון משפחתי', en:'Family account',     ru:'Семейный счёт',         ar:'حساب عائلي',      de:'Familienkonto',     fr:'Compte familial'},
+  { he:'תוכניות חיסכון',en:'Savings plans',     ru:'Планы накоплений',      ar:'خطط الادخار',     de:'Sparpläne',         fr:'Plans d\'épargne'},
+  { he:'גיבוי בענן',   en:'Cloud backup',       ru:'Облачный бэкап',        ar:'نسخ احتياطي',     de:'Cloud-Backup',      fr:'Sauvegarde'     },
+];
+
+function getLangText(obj) {
+  return obj[_lang] || obj['en'] || '';
 }
 
+function buildLangBar() {
+  return Object.entries(LANGS).map(([code,L]) => `
+    <button onclick="window.setLang('${code}')"
+      style="padding:7px 16px;border-radius:20px;border:1px solid ${_lang===code?'rgba(13,216,128,.4)':'rgba(255,255,255,.12)'};
+             background:${_lang===code?'rgba(13,216,128,.15)':'transparent'};
+             color:${_lang===code?'#0DD880':'#9ca3af'};font-size:13px;cursor:pointer;
+             font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s;font-weight:${_lang===code?'700':'400'}">
+      <span style="font-size:16px">${L.flag}</span>${L.name}
+    </button>`).join('');
+}
+
+function renderLandingScreen() {
+  const el = document.getElementById('landingScreen');
+  if(!el) return;
+  const L = LANGS[_lang]||LANGS.he;
+  const dir = L.dir;
+  el.dir = dir;
+  el.style.background = 'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(13,216,128,0.07) 0%,transparent 60%),#09090B';
+  el.style.fontFamily = "'Heebo',sans-serif";
+  el.innerHTML = `
+    <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;max-width:440px;margin:0 auto;box-sizing:border-box">
+
+      <!-- Brand -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="width:58px;height:58px;background:rgba(13,216,128,0.15);border:1px solid rgba(13,216,128,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">💰</div>
+        <div style="font-size:32px;font-weight:900;color:#f0f2ff;letter-spacing:-1.5px">תקציב</div>
+        <div style="font-size:14px;color:#5a6080;margin-top:7px">${L.appTagline}</div>
+      </div>
+
+      <!-- Features grid -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-bottom:20px">
+        ${FEATURE_KEYS.map(f=>`
+          <div style="background:#111113;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 8px;text-align:center">
+            <div style="font-size:20px;margin-bottom:6px">${f.icon}</div>
+            <div style="font-size:10px;font-weight:600;color:#9ca3af;line-height:1.4">${getLangText(f)}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Lang bar -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:18px">
+        ${buildLangBar()}
+      </div>
+
+      <!-- CTAs -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+        <button id="landingNewBtn"
+          style="width:100%;padding:16px;background:#0DD880;border:none;border-radius:13px;color:#000;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 24px rgba(13,216,128,.3);transition:opacity .18s">
+          ${L.newUser}
+        </button>
+        <button id="landingExistBtn"
+          style="width:100%;padding:14px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:13px;color:#6c6f8a;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+          ${L.existingUser}
+        </button>
+      </div>
+    </div>`;
+
+  // Re-wire buttons
+  initLanding();
+}
+
+function renderPricingScreen() {
+  const el = document.getElementById('pricingScreen');
+  if(!el) return;
+  const L = LANGS[_lang]||LANGS.he;
+  el.dir = L.dir;
+  el.style.background = '#09090B';
+  el.style.fontFamily = "'Heebo',sans-serif";
+  el.innerHTML = `
+    <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;max-width:440px;margin:0 auto;box-sizing:border-box">
+      <div style="width:100%;margin-bottom:18px">
+        <button id="pricingBackBtn" style="background:none;border:none;color:#454860;font-size:14px;cursor:pointer;font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">
+          ${L.dir==='rtl'?'→':'←'} ${L.back}
+        </button>
+      </div>
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:24px;font-weight:900;color:#f0f2ff">${L.chooseplan}</div>
+        <div style="font-size:13px;color:#454860;margin-top:6px">${L.betaFree}</div>
+      </div>
+      <div style="width:100%;background:#111113;border:1px solid rgba(13,216,128,.35);border-radius:18px;padding:24px;margin-bottom:12px;box-sizing:border-box">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:10px;color:#0DD880;font-weight:800;letter-spacing:2px;margin-bottom:5px">BETA</div>
+            <div style="font-size:30px;font-weight:900;color:#fff">${L.freePlan}</div>
+            <div style="font-size:12px;color:#454860;margin-top:3px">${L.noCreditCard}</div>
+          </div>
+          <div style="background:rgba(13,216,128,.15);border:1px solid rgba(13,216,128,.25);border-radius:8px;padding:5px 12px;font-size:11px;color:#0DD880;font-weight:700">${L.fullAccess}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:20px">
+          ${PLAN_FEATURES_KEYS.map(f=>`<div style="font-size:12px;color:#8b8fa8;display:flex;align-items:center;gap:5px"><span style="color:#0DD880;font-size:13px">✓</span>${getLangText(f)}</div>`).join('')}
+        </div>
+        <button id="pricingStartBtn" style="width:100%;padding:15px;background:#0DD880;border:none;border-radius:12px;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">
+          ${L.startFree}
+        </button>
+      </div>
+      <div style="width:100%;background:#0e1120;border:1px solid #1a1d30;border-radius:14px;padding:16px;box-sizing:border-box;opacity:0.35;text-align:center">
+        <div style="font-size:10px;color:#454860;font-weight:800;letter-spacing:2px;margin-bottom:4px">PRO</div>
+        <div style="font-size:20px;font-weight:900;color:#454860">₪29<span style="font-size:12px">/mo</span></div>
+      </div>
+    </div>`;
+
+  // Re-wire pricing buttons
+  const back = document.getElementById('pricingBackBtn');
+  const start = document.getElementById('pricingStartBtn');
+  const showScreen = id => {
+    ['landingScreen','pricingScreen','authScreen'].forEach(s=>{
+      const e=document.getElementById(s); if(e) e.style.display='none';
+    });
+    const e=document.getElementById(id);
+    if(e) e.style.display = id==='authScreen'?'flex':'block';
+  };
+  if(back) back.onclick = () => { showScreen('landingScreen'); renderLandingScreen(); };
+  if(start) start.onclick = () => { showScreen('authScreen'); renderAuthScreen(); if(typeof switchTab==='function') switchTab('register'); };
+}
+
+function renderAuthScreen() {
+  const L = LANGS[_lang]||LANGS.he;
+  const dir = L.dir;
+  const el = document.getElementById('authScreen');
+  if(!el) return;
+  el.dir = dir;
+
+  // Update dynamic text within auth screen
+  const sub = el.querySelector('.auth-sub');
+  if(sub) sub.textContent = L.appTagline;
+
+  const tabLogin = document.getElementById('tabLogin');
+  const tabReg   = document.getElementById('tabRegister');
+  const authName  = document.getElementById('authName');
+  const authEmail = document.getElementById('authEmail');
+  const authPass  = document.getElementById('authPass');
+  const submitBtn = document.getElementById('authSubmitBtn');
+  const forgotBtn = document.getElementById('forgotBtn');
+  const googleBtn = el.querySelector('.auth-google');
+  const backBtn   = document.getElementById('authBackBtn');
+  const consentSpan = el.querySelector('#consentBox span');
+
+  if(tabLogin)  tabLogin.textContent  = L.login;
+  if(tabReg)    tabReg.textContent    = L.register;
+  if(authName)  authName.placeholder  = L.fullName;
+  if(authEmail) authEmail.placeholder = L.email;
+  if(authPass)  authPass.placeholder  = L.password;
+  if(submitBtn) submitBtn.textContent = typeof window._authTab !== 'undefined' && window._authTab==='register' ? L.signUp : L.signIn;
+  if(forgotBtn) forgotBtn.textContent = L.forgotPass;
+  if(googleBtn) { const txt = googleBtn.childNodes[googleBtn.childNodes.length-1]; if(txt) txt.textContent = ' ' + L.continueGoogle; }
+  if(backBtn)   backBtn.textContent   = (dir==='rtl'?'→ ':'← ') + L.back;
+  if(consentSpan) {
+    consentSpan.innerHTML = L.consentText + `<br/><span style="color:#f87171;font-weight:700">${L.consentRequired}</span>`;
+  }
+}
+
+// Comprehensive setLang that rebuilds all screens
+window.setLang = function setLang(code) {
+  _lang = code;
+  localStorage.setItem('appLang', code);
+  const L = LANGS[code]||LANGS.he;
+  document.documentElement.lang = code;
+  document.documentElement.dir  = L.dir;
+  document.body.dir = L.dir;
+  if(L.dir === 'ltr') document.body.classList.add('ltr-mode');
+  else document.body.classList.remove('ltr-mode');
+
+  // Rebuild visible screen
+  const landing = document.getElementById('landingScreen');
+  const pricing  = document.getElementById('pricingScreen');
+  const auth     = document.getElementById('authScreen');
+  const app      = document.getElementById('app');
+
+  if(landing && landing.style.display !== 'none') renderLandingScreen();
+  if(pricing && pricing.style.display !== 'none') renderPricingScreen();
+  if(auth    && auth.style.display    !== 'none') renderAuthScreen();
+  if(app     && app.style.display     !== 'none' && typeof render === 'function') render();
+};
+
+function renderLandingLang() { renderLandingScreen(); }
+
 // Wire landing buttons immediately (DOM already parsed at this point)
+renderLandingScreen();
+renderPricingScreen();
 initLanding();
+
 </script>
 </body>
 </html>
