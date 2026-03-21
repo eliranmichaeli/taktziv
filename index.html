@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="תקציב"/>
@@ -466,147 +466,208 @@ body.light-mode .meta-name-color { color: var(--theme-color) !important; }
 .header{display:none!important;}
 .backup-bar{display:none!important;}
 
-/* ── MOBILE — bottom tab bar ──────────────────────── */
+/* ════════════════════════════════════════════════════
+   MOBILE — bottom tab bar + responsive layout
+   ════════════════════════════════════════════════════ */
 @media(max-width:768px){
-  /* Sidebar → bottom tab bar */
+
+  /* ── Sidebar becomes bottom tab bar ── */
   .app-sidebar{
-    position:fixed;bottom:0;top:auto;right:0;left:0;
-    width:100%;height:62px;
+    position:fixed;
+    bottom:0; top:auto; right:0; left:0;
+    width:100%; height:58px;
     flex-direction:row;
-    border-left:none;border-top:1px solid rgba(255,255,255,.07);
     background:#09090B;
-    overflow-x:auto;overflow-y:hidden;
-    padding:0 4px;
-    align-items:center;
+    border-left:none;
+    border-top:1px solid rgba(255,255,255,.08);
+    overflow-x:auto; overflow-y:hidden;
+    padding:0;
+    align-items:stretch;
     z-index:200;
     -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
   .app-sidebar::-webkit-scrollbar{display:none;}
 
-  /* Hide desktop-only sidebar elements */
-  .sidebar-brand,.sidebar-divider,.sidebar-footer{display:none!important;}
+  /* Hide desktop-only sidebar sections */
+  .sidebar-brand,
+  .sidebar-divider,
+  .sidebar-footer { display:none!important; }
 
+  /* Nav row */
   .sidebar-nav{
-    flex-direction:row;padding:0;gap:0;
-    flex:1;overflow-x:auto;
+    flex-direction:row;
+    padding:0; gap:0;
+    flex:1;
+    overflow-x:auto;
+    overflow-y:hidden;
     -webkit-overflow-scrolling:touch;
-    align-items:center;
+    scrollbar-width:none;
+    align-items:stretch;
   }
   .sidebar-nav::-webkit-scrollbar{display:none;}
 
+  /* Tab buttons */
   .snav-btn{
-    flex-direction:column;gap:2px;
-    padding:6px 10px;min-width:56px;
-    font-size:10px;font-weight:500;
-    border:none!important;background:transparent!important;
-    color:#6b7280;border-radius:10px;
+    flex-direction:column;
+    gap:3px;
+    padding:6px 12px 8px;
+    min-width:60px;
+    flex-shrink:0;
+    font-size:10px;
+    font-weight:500;
+    line-height:1.2;
+    border:none!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    color:#6b7280;
+    border-radius:0;
+    align-items:center;
+    justify-content:center;
   }
-  .snav-btn.active{color:#0DD880!important;}
-  .snav-btn:hover{background:transparent!important;box-shadow:none!important;}
-  .snav-icon{font-size:20px;line-height:1.2;}
+  .snav-btn:hover{
+    background:rgba(255,255,255,.03)!important;
+    box-shadow:none!important;
+    color:#9ca3af!important;
+  }
+  .snav-btn.active{
+    color:#0DD880!important;
+    background:transparent!important;
+    border-top:2px solid #0DD880!important;
+    padding-top:4px;
+  }
+  .snav-icon{ font-size:20px; line-height:1; }
 
-  /* Main content shifts */
-  .app-main{margin-right:0!important;margin-left:0!important;padding-bottom:72px;}
+  /* ── App main content ── */
+  .app-main{
+    margin-right:0!important;
+    margin-left:0!important;
+    padding-bottom:calc(58px + env(safe-area-inset-bottom, 0px) + 8px);
+    min-height:100svh;
+  }
 
-  /* Topbar compact */
+  /* ── Topbar ── */
   .app-topbar{
+    position:sticky; top:0; z-index:100;
     padding:8px 14px;
-    gap:6px;
+    gap:8px;
     flex-wrap:nowrap;
     overflow-x:auto;
+    scrollbar-width:none;
+    min-height:52px;
   }
   .app-topbar::-webkit-scrollbar{display:none;}
-  .topbar-left,.topbar-right{flex-shrink:0;}
+  .topbar-left{ gap:6px; flex-shrink:0; }
+  .topbar-right{ flex-shrink:0; }
 
-  /* Month bar scrollable inside topbar */
+  /* ── Month bar ── */
   .month-bar-inline{
-    max-width:calc(100vw - 120px);
     overflow-x:auto;
     gap:4px;
+    max-width:56vw;
+    scrollbar-width:none;
   }
-  .mbtn{font-size:10px;padding:4px 8px;}
-  .year-sel{font-size:11px;padding:4px 7px;}
+  .month-bar-inline::-webkit-scrollbar{display:none;}
+  .mbtn{ font-size:11px; padding:5px 9px; flex-shrink:0; }
+  .year-sel{ font-size:12px; padding:5px 8px; }
 
-  /* Content area */
+  /* ── Content area ── */
   .app-content{
-    padding:12px 12px 16px;
+    padding:14px 14px 20px;
     max-width:100%;
+    width:100%;
   }
 
-  /* Cards */
+  /* ── Cards ── */
   .card{
     padding:14px!important;
     border-radius:14px!important;
-    margin-bottom:10px!important;
+    margin-bottom:12px!important;
   }
 
-  /* Stat grid 2-col */
-  .stat-grid{grid-template-columns:1fr 1fr!important;gap:8px!important;}
-  .stat-card{padding:12px 10px!important;}
-  .stat-val{font-size:18px!important;}
+  /* ── Stat grids ── */
+  .stat-grid{ grid-template-columns:1fr 1fr!important; gap:10px!important; }
+  .stat-card{ padding:14px 12px!important; }
+  .stat-val{ font-size:20px!important; }
+  .stat-label{ font-size:12px!important; }
 
-  /* Grid2 single col */
-  .grid2{grid-template-columns:1fr!important;}
+  /* ── Two-col → one-col ── */
+  .grid2{ grid-template-columns:1fr!important; }
 
-  /* Tables scroll */
-  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;}
-  .tbl th,.tbl td{padding:7px 8px;font-size:12px;}
+  /* ── Tables horizontal scroll ── */
+  .tbl-wrap,.summary-table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:10px;
+    margin:0 -2px;
+  }
+  .tbl th,.tbl td{ padding:8px 10px; font-size:12px; }
 
-  /* Modal — full bottom sheet */
-  .overlay{align-items:flex-end;}
+  /* ── Modal — full bottom sheet ── */
+  .overlay{ align-items:flex-end; padding:0; }
   .modal{
-    border-radius:20px 20px 0 0!important;
-    max-height:90vh!important;
-    padding:20px 16px!important;
-    padding-bottom:calc(env(safe-area-inset-bottom) + 24px)!important;
+    border-radius:22px 22px 0 0!important;
+    max-height:92vh!important;
+    padding:22px 18px!important;
+    padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 24px)!important;
+    width:100%!important; max-width:100%!important;
   }
-  .modal-title{font-size:16px!important;margin-bottom:14px!important;}
-  .input{font-size:16px!important;padding:12px 13px!important;}
+  .modal-title{ font-size:17px!important; margin-bottom:16px!important; }
 
-  /* Buttons */
-  .btn-primary,.btn-ghost{padding:10px 14px!important;font-size:13px!important;}
-  .btn-del,.btn-edt{padding:7px 10px!important;font-size:12px!important;}
+  /* ── Inputs ── */
+  .input{ font-size:16px!important; padding:13px 14px!important; }
 
-  /* Auth screen */
-  .auth-screen{padding:16px!important;align-items:flex-start!important;padding-top:max(52px,env(safe-area-inset-top))!important;}
-  .auth-box{padding:22px 18px!important;border-radius:20px!important;}
-  .auth-input{font-size:16px!important;padding:13px 14px!important;}
-  .auth-btn{font-size:16px!important;padding:14px!important;}
+  /* ── Auth screen ── */
+  .auth-screen{
+    padding:16px!important;
+    padding-top:max(52px,env(safe-area-inset-top, 16px))!important;
+    align-items:flex-start!important;
+    overflow-y:auto;
+  }
+  .auth-box{
+    padding:24px 18px!important;
+    border-radius:20px!important;
+    width:100%;
+  }
+  .auth-input{ font-size:16px!important; padding:14px!important; }
+  .auth-btn{ font-size:16px!important; padding:15px!important; }
+  .auth-google{ font-size:15px!important; padding:14px!important; }
 
-  /* Sections */
-  .section-title{font-size:10px!important;}
-  .add-row{flex-direction:row;align-items:center;}
+  /* ── Section titles ── */
+  .section-title{ font-size:11px!important; }
 
-  /* Topbar hide text on small buttons */
-  .topbar-left .btn-ghost span,
-  .topbar-right .btn-ghost span{display:none;}
-
-  /* Summary table in dashboard */
-  .summary-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-
-  /* Hide year selector in topbar on very small screens */
+  /* ── Buttons in topbar ── */
+  .app-topbar .btn-primary,
+  .app-topbar .btn-ghost{
+    padding:7px 12px!important;
+    font-size:12px!important;
+    white-space:nowrap;
+  }
 }
 
-/* Extra small phones */
-@media(max-width:390px){
-  .snav-btn{min-width:48px;padding:5px 7px;font-size:9px;}
-  .snav-icon{font-size:18px;}
-  .app-content{padding:10px 10px 14px;}
-  .card{padding:12px!important;border-radius:12px!important;}
+/* ── Extra small phones (iPhone SE, Galaxy A) ── */
+@media(max-width:375px){
+  .snav-btn{ min-width:52px; padding:6px 8px 8px; font-size:9px; }
+  .snav-icon{ font-size:18px; }
+  .app-content{ padding:12px 12px 16px; }
+  .card{ padding:12px!important; }
+  .stat-val{ font-size:18px!important; }
 }
 
-/* LTR mobile fix */
-@media(max-width:768px){
-  body.ltr-mode .app-sidebar{right:0;left:0;}
-  body.ltr-mode .app-main{margin-right:0;margin-left:0;}
-}
-
-/* Safe area (iPhone notch/home bar) */
+/* ── Safe area for iPhone notch/home indicator ── */
 @supports(padding-bottom:env(safe-area-inset-bottom)){
   @media(max-width:768px){
-    .app-sidebar{height:calc(62px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);}
-    .app-main{padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+    .app-sidebar{
+      height:calc(58px + env(safe-area-inset-bottom));
+      padding-bottom:env(safe-area-inset-bottom);
+    }
   }
+}
+
+/* ── LTR mobile ── */
+@media(max-width:768px){
+  body.ltr-mode .app-sidebar{ right:0; left:0; }
+  body.ltr-mode .app-main{ margin-right:0; margin-left:0; }
 }
 
 /* LTR override for non-Hebrew/Arabic */
@@ -634,31 +695,26 @@ body.ltr-mode .snav-btn{text-align:left;}
 /* Deposit button */
 .btn-deposit{background:rgba(13,216,128,.12);color:#0DD880;padding:6px 12px;border-radius:8px;border:1px solid rgba(13,216,128,.25);cursor:pointer;font-size:12px;font-family:'Heebo',sans-serif;font-weight:600;}
 .btn-deposit:hover{background:rgba(13,216,128,.22);}
+.mobile-only-flex{display:none;}
+@media(max-width:768px){.mobile-only-flex{display:flex!important;}}
 
 
-/* ── MOBILE ZOOM & OVERFLOW FIXES ──────────────────── */
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
-}
+/* ── MOBILE CORE FIXES ──────────────────────────────── */
 * { box-sizing: border-box; }
 
-/* Prevent iOS input zoom (inputs must be 16px+) */
-input[type=text], input[type=email], input[type=password],
-input[type=number], input[type=date], select, textarea {
-  font-size: 16px !important;
+/* Prevent iOS input zoom — inputs must be >= 16px font size */
+@media(max-width:768px){
+  input[type=text], input[type=email], input[type=password],
+  input[type=number], input[type=date], select, textarea {
+    font-size: 16px !important;
+  }
 }
 
-/* Touch target minimum */
-button { min-height: 36px; }
-
-/* Prevent horizontal scroll on app content */
-.app-content { overflow-x: hidden; }
-.card { overflow-x: hidden; }
-
-/* Fix tables on mobile */
-table { width: 100% !important; }
+/* Touch target minimum 44px (Apple HIG) */
+@media(max-width:768px){
+  button { min-height: 44px; touch-action: manipulation; }
+  .snav-btn { min-height: 0 !important; }
+}
 
 /* Fix modal z-index on mobile */
 .overlay { z-index: 300; }
@@ -6598,6 +6654,7 @@ function buildApp(){
     {id:'settings',  icon:'⚙',   label:t('settings')},
     ...(isAdmin() ? [{id:'admin',icon:'★',label:'ניהול'}] : []),
   ].filter(tab => !tabHidden(tab.id));
+  // Add a dedicated lang button for mobile (visible in bottom bar)
 
   const syncDotColor = syncStatus==='online'?'#0DD880':syncStatus==='syncing'?'#63b3ed':'#f6ad55';
 
@@ -6615,6 +6672,11 @@ function buildApp(){
           <span class="snav-icon">${tab.icon}</span>
           <span>${tab.label}</span>
         </button>`).join('')}
+      <button class="snav-btn mobile-only-flex" data-action="open-lang-modal" title="שפה"
+        style="flex-shrink:0">
+        <span class="snav-icon">${LANGS[_lang]?.flag||'🌐'}</span>
+        <span style="font-size:9px">${LANGS[_lang]?.name?.slice(0,3)||'Lang'}</span>
+      </button>
     </nav>
     <div class="sidebar-divider"></div>
     <div class="sidebar-footer">
