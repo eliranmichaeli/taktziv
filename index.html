@@ -1028,6 +1028,132 @@ body.ltr-mode .snav-btn{text-align:left;}
   font-size:13px!important;
 }
 
+
+/* ── ONBOARDING — Premium Style ─────────────────────── */
+.ob-screen{
+  position:fixed;inset:0;
+  background:#020617;
+  display:flex;flex-direction:column;
+  font-family:'Heebo',sans-serif;
+  z-index:400;
+  overflow:hidden;
+}
+.ob-header{
+  padding:20px 24px 14px;
+  border-bottom:1px solid rgba(148,163,184,.06);
+  flex-shrink:0;
+}
+.ob-logo{
+  width:36px;height:36px;
+  background:rgba(16,185,129,.12);
+  border:1px solid rgba(16,185,129,.2);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;margin-bottom:14px;
+}
+.ob-title{font-size:20px;font-weight:700;color:#F8FAFC;margin-bottom:4px;letter-spacing:-.3px;}
+.ob-sub{font-size:13px;color:#64748B;}
+.ob-progress{padding:16px 24px 0;flex-shrink:0;}
+.ob-steps{margin-bottom:6px;}
+.ob-step-label{font-size:11px;color:#475569;font-weight:500;letter-spacing:.04em;}
+.ob-body{
+  flex:1;overflow-y:auto;
+  padding:20px 24px;
+  scrollbar-width:none;
+}
+.ob-body::-webkit-scrollbar{display:none;}
+.ob-card{
+  background:transparent;
+  border:none;
+  padding:0;
+}
+.ob-emoji{display:none;}
+.ob-card-title{font-size:17px;font-weight:700;color:#F8FAFC;margin-bottom:6px;letter-spacing:-.3px;}
+.ob-card-sub{font-size:13px;color:#64748B;margin-bottom:20px;}
+.ob-footer{
+  padding:16px 24px calc(env(safe-area-inset-bottom,0px)+16px);
+  border-top:1px solid rgba(148,163,184,.06);
+  display:flex;align-items:center;gap:10px;
+  flex-shrink:0;
+}
+.ob-btn-back{
+  background:transparent;border:1px solid rgba(148,163,184,.12);
+  border-radius:10px;color:#64748B;
+  cursor:pointer;font-family:'Heebo',sans-serif;
+  font-size:14px;font-weight:500;padding:12px 18px;
+  transition:all .15s;
+}
+.ob-btn-back:hover{border-color:rgba(148,163,184,.25);color:#94A3B8;}
+.ob-btn-next{
+  flex:1;padding:14px;background:#10B981;
+  border:none;border-radius:10px;color:#000;
+  font-family:'Heebo',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:opacity .15s;letter-spacing:-.2px;
+}
+.ob-btn-next:hover{opacity:.88;}
+.ob-input{
+  background:#0B1120;
+  border:1px solid rgba(148,163,184,.1);
+  border-radius:10px;
+  color:#F8FAFC;
+  font-family:'Heebo',sans-serif;
+  font-size:16px;
+  padding:13px 14px;
+  width:100%;outline:none;
+  margin-bottom:12px;
+  transition:border-color .18s;
+  box-sizing:border-box;
+}
+.ob-input:focus{border-color:#10B981;}
+.ob-select{
+  background:#0B1120;border:1px solid rgba(148,163,184,.1);
+  border-radius:10px;color:#F8FAFC;
+  font-family:'Heebo',sans-serif;font-size:16px;
+  padding:13px 14px;width:100%;outline:none;
+  margin-bottom:12px;cursor:pointer;
+}
+.ob-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;}
+.ob-chip{
+  padding:8px 14px;
+  border:1px solid rgba(148,163,184,.1);
+  border-radius:20px;
+  background:#0B1120;
+  color:#64748B;
+  font-size:13px;font-weight:500;
+  cursor:pointer;
+  transition:all .15s;
+  font-family:'Heebo',sans-serif;
+}
+.ob-chip:hover{border-color:rgba(16,185,129,.3);color:#94A3B8;}
+.ob-chip.selected{
+  background:rgba(16,185,129,.12)!important;
+  border-color:rgba(16,185,129,.4)!important;
+  color:#10B981!important;
+  font-weight:600;
+}
+.ob-toggle-btn{
+  flex:1;padding:11px;
+  border:1px solid rgba(148,163,184,.1);
+  border-radius:8px;
+  background:#0B1120;color:#64748B;
+  font-size:13px;font-family:'Heebo',sans-serif;
+  cursor:pointer;text-align:center;
+  transition:all .15s;
+}
+.ob-toggle-btn.selected{
+  background:rgba(16,185,129,.12);
+  border-color:rgba(16,185,129,.3);
+  color:#10B981;font-weight:600;
+}
+.ob-income-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:#0B1120;
+  border-radius:10px;
+  margin-bottom:6px;
+  border:1px solid rgba(148,163,184,.07);
+}
+
 </style>
 </head>
 <body>
@@ -1765,6 +1891,356 @@ window.toggleTheme = function() {
 initTheme();
 
 // ── Onboarding Wizard ─────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+// ONBOARDING i18n TRANSLATIONS
+// ══════════════════════════════════════════════════════════════
+const OB_TEXTS = {
+  he: {
+    stepLabel:      (n,total,label) => `שלב ${n} מתוך ${total} — ${label}`,
+    next:           'המשך ←',
+    back:           '← חזור',
+    finish:         'סיים והתחל! ✅',
+    enterName:      'נא להזין שם',
+    // Step labels
+    stepAccountType:'סוג חשבון',
+    stepProfile:    'פרופיל אישי',
+    stepBudget:     'הגדרת תקציב',
+    stepCatsP:      'קטגוריות אישיות',
+    stepCatsF:      'קטגוריות משפחה',
+    stepIncome:     'מקורות הכנסה',
+    stepCurrency:   'מטבע',
+    stepCards:      'כרטיסי אשראי',
+    stepGoals:      'מטרות פיננסיות',
+    // Account type
+    typePersonalTitle:  'שימוש אישי',
+    typePersonalSub:    'אישי, חיסכון, הכנסות',
+    typeFamilySoloTitle:'משפחתי (ללא בן/בת זוג)',
+    typeFamilySoloSub:  'אישי, משפחה, חיסכון',
+    typeFamilyTitle:    'משפחתי עם בן/בת זוג',
+    typeFamilySub:      'אישי 1, אישי 2, משפחה, חיסכון',
+    yourName:       'שמך',
+    namePh1:        'למשל: אלירן',
+    partnerName:    'שם בן/בת הזוג',
+    namePh2:        'למשל: שירה',
+    // Profile
+    profileGreet:   (name) => `שלום ${name}!`,
+    dobLabel:       'תאריך לידה (אופציונלי)',
+    dobNote:        'לצורך התאמה אישית של האפליקציה',
+    // Budget
+    budgetStartQ:   'ביום כמה מתחיל החודש התקציבי?',
+    budgetTip:      'רוב האנשים בוחרים יום 1 או יום 10 (יום הורדת אשראי)',
+    budgetMonthly:  'תקציב חודשי (ניתן לשנות מאוחר יותר)',
+    personal:       'אישי',
+    family:         'משפחה',
+    perMonth:       'לחודש',
+    // Categories
+    catsNote:       (n) => `נבחרו: ${n} קטגוריות`,
+    // Income
+    incomeNote:     'ניתן לשנות ולהוסיף מאוחר יותר',
+    // Currency
+    currencyQ:      'באיזה מטבע תנהל את התקציב?',
+    currencyNote:   'ניתן לשנות מטבע לכל פריט בנפרד',
+    // Cards
+    cardsNote:      'הגדר כרטיסים למעקב תזרים (ניתן לדלג)',
+    cardName:       'שם הכרטיס',
+    cardBillingDay: 'יום חיוב',
+    addCard:        '+ הוסף כרטיס',
+    // Goals
+    goalsNote:      'יעזור לנו לתת לך ניתוח AI מדויק (ניתן לדלג)',
+    monthlySaving:  'יעד חיסכון חודשי',
+    emergencyFund:  'רוצה לבנות קרן חירום',
+    debtFree:       'רוצה להיות נקי מחובות',
+    yearlyTarget:   'יעד שנתי (₪)',
+    notes:          'הערות / מטרות נוספות',
+    // Saving
+    saving:         '⏳ שומר...',
+    welcome:        (name) => `🎉 ברוך הבא, ${name}!`,
+  },
+
+  en: {
+    stepLabel:      (n,total,label) => `Step ${n} of ${total} — ${label}`,
+    next:           'Continue →',
+    back:           '← Back',
+    finish:         'Finish & Start! ✅',
+    enterName:      'Please enter your name',
+    stepAccountType:'Account Type',
+    stepProfile:    'Personal Profile',
+    stepBudget:     'Budget Setup',
+    stepCatsP:      'Personal Categories',
+    stepCatsF:      'Family Categories',
+    stepIncome:     'Income Sources',
+    stepCurrency:   'Currency',
+    stepCards:      'Credit Cards',
+    stepGoals:      'Financial Goals',
+    typePersonalTitle:  'Personal Use',
+    typePersonalSub:    'Personal, savings, income',
+    typeFamilySoloTitle:'Family (solo)',
+    typeFamilySoloSub:  'Personal, family, savings',
+    typeFamilyTitle:    'Family with partner',
+    typeFamilySub:      'Personal 1, Personal 2, Family',
+    yourName:       'Your name',
+    namePh1:        'e.g. Alex',
+    partnerName:    "Partner's name",
+    namePh2:        'e.g. Jordan',
+    profileGreet:   (name) => `Hello, ${name}!`,
+    dobLabel:       'Date of birth (optional)',
+    dobNote:        'Used for personal customization',
+    budgetStartQ:   'Which day does your budget month start?',
+    budgetTip:      'Most people choose the 1st or the 10th (credit card billing date)',
+    budgetMonthly:  'Monthly budget (can be changed later)',
+    personal:       'Personal',
+    family:         'Family',
+    perMonth:       '/month',
+    catsNote:       (n) => `${n} categories selected`,
+    incomeNote:     'Can be changed later',
+    currencyQ:      'Which currency will you use?',
+    currencyNote:   'You can set a different currency per item',
+    cardsNote:      'Set up cards for cashflow tracking (optional)',
+    cardName:       'Card name',
+    cardBillingDay: 'Billing day',
+    addCard:        '+ Add card',
+    goalsNote:      'Helps us give you accurate AI insights (optional)',
+    monthlySaving:  'Monthly saving target',
+    emergencyFund:  'Build an emergency fund',
+    debtFree:       'Become debt-free',
+    yearlyTarget:   'Yearly target',
+    notes:          'Notes / additional goals',
+    saving:         '⏳ Saving...',
+    welcome:        (name) => `🎉 Welcome, ${name}!`,
+  },
+
+  ru: {
+    stepLabel:      (n,total,label) => `Шаг ${n} из ${total} — ${label}`,
+    next:           'Далее →',
+    back:           '← Назад',
+    finish:         'Завершить! ✅',
+    enterName:      'Введите ваше имя',
+    stepAccountType:'Тип счёта',
+    stepProfile:    'Профиль',
+    stepBudget:     'Бюджет',
+    stepCatsP:      'Личные категории',
+    stepCatsF:      'Семейные категории',
+    stepIncome:     'Источники дохода',
+    stepCurrency:   'Валюта',
+    stepCards:      'Кредитные карты',
+    stepGoals:      'Финансовые цели',
+    typePersonalTitle:  'Личное использование',
+    typePersonalSub:    'Личные, сбережения, доходы',
+    typeFamilySoloTitle:'Семейный (без партнёра)',
+    typeFamilySoloSub:  'Личный, семейный, накопления',
+    typeFamilyTitle:    'Семейный с партнёром',
+    typeFamilySub:      'Личный 1, Личный 2, Семья',
+    yourName:       'Ваше имя',
+    namePh1:        'напр. Александр',
+    partnerName:    'Имя партнёра',
+    namePh2:        'напр. Мария',
+    profileGreet:   (name) => `Привет, ${name}!`,
+    dobLabel:       'Дата рождения (необязательно)',
+    dobNote:        'Для персонализации приложения',
+    budgetStartQ:   'С какого числа начинается ваш бюджетный месяц?',
+    budgetTip:      'Большинство выбирают 1-е или 10-е число',
+    budgetMonthly:  'Месячный бюджет (можно изменить позже)',
+    personal:       'Личный',
+    family:         'Семейный',
+    perMonth:       '/мес',
+    catsNote:       (n) => `Выбрано: ${n} категорий`,
+    incomeNote:     'Можно изменить позже',
+    currencyQ:      'В какой валюте вести бюджет?',
+    currencyNote:   'Валюту можно менять для каждой записи',
+    cardsNote:      'Настройте карты для отслеживания (необязательно)',
+    cardName:       'Название карты',
+    cardBillingDay: 'День списания',
+    addCard:        '+ Добавить карту',
+    goalsNote:      'Поможет дать точные AI-советы (необязательно)',
+    monthlySaving:  'Цель ежемесячных накоплений',
+    emergencyFund:  'Создать резервный фонд',
+    debtFree:       'Избавиться от долгов',
+    yearlyTarget:   'Годовая цель',
+    notes:          'Заметки / дополнительные цели',
+    saving:         '⏳ Сохранение...',
+    welcome:        (name) => `🎉 Добро пожаловать, ${name}!`,
+  },
+
+  ar: {
+    stepLabel:      (n,total,label) => `الخطوة ${n} من ${total} — ${label}`,
+    next:           'التالي ←',
+    back:           '→ رجوع',
+    finish:         'إنهاء والبدء! ✅',
+    enterName:      'الرجاء إدخال اسمك',
+    stepAccountType:'نوع الحساب',
+    stepProfile:    'الملف الشخصي',
+    stepBudget:     'إعداد الميزانية',
+    stepCatsP:      'الفئات الشخصية',
+    stepCatsF:      'الفئات العائلية',
+    stepIncome:     'مصادر الدخل',
+    stepCurrency:   'العملة',
+    stepCards:      'بطاقات الائتمان',
+    stepGoals:      'الأهداف المالية',
+    typePersonalTitle:  'استخدام شخصي',
+    typePersonalSub:    'شخصي، مدخرات، دخل',
+    typeFamilySoloTitle:'عائلي (بدون شريك)',
+    typeFamilySoloSub:  'شخصي، عائلي، مدخرات',
+    typeFamilyTitle:    'عائلي مع شريك',
+    typeFamilySub:      'شخصي 1، شخصي 2، عائلة',
+    yourName:       'اسمك',
+    namePh1:        'مثال: أحمد',
+    partnerName:    'اسم الشريك',
+    namePh2:        'مثال: سارة',
+    profileGreet:   (name) => `مرحباً، ${name}!`,
+    dobLabel:       'تاريخ الميلاد (اختياري)',
+    dobNote:        'لتخصيص التطبيق',
+    budgetStartQ:   'في أي يوم يبدأ شهرك الميزانياتي؟',
+    budgetTip:      'معظم الناس يختارون اليوم 1 أو 10',
+    budgetMonthly:  'الميزانية الشهرية (يمكن تغييرها لاحقاً)',
+    personal:       'شخصي',
+    family:         'عائلي',
+    perMonth:       '/شهر',
+    catsNote:       (n) => `تم اختيار: ${n} فئات`,
+    incomeNote:     'يمكن تغييره لاحقاً',
+    currencyQ:      'ما العملة التي ستستخدمها؟',
+    currencyNote:   'يمكن تغيير العملة لكل عنصر',
+    cardsNote:      'أضف البطاقات لتتبع التدفق النقدي (اختياري)',
+    cardName:       'اسم البطاقة',
+    cardBillingDay: 'يوم الفاتورة',
+    addCard:        '+ إضافة بطاقة',
+    goalsNote:      'يساعد في تقديم نصائح AI دقيقة (اختياري)',
+    monthlySaving:  'هدف الادخار الشهري',
+    emergencyFund:  'بناء صندوق طوارئ',
+    debtFree:       'التخلص من الديون',
+    yearlyTarget:   'الهدف السنوي',
+    notes:          'ملاحظات / أهداف إضافية',
+    saving:         '⏳ جارٍ الحفظ...',
+    welcome:        (name) => `🎉 مرحباً بك، ${name}!`,
+  },
+
+  de: {
+    stepLabel:      (n,total,label) => `Schritt ${n} von ${total} — ${label}`,
+    next:           'Weiter →',
+    back:           '← Zurück',
+    finish:         'Fertig & Starten! ✅',
+    enterName:      'Bitte Namen eingeben',
+    stepAccountType:'Kontotyp',
+    stepProfile:    'Persönliches Profil',
+    stepBudget:     'Budget-Einrichtung',
+    stepCatsP:      'Persönliche Kategorien',
+    stepCatsF:      'Familienkategorien',
+    stepIncome:     'Einkommensquellen',
+    stepCurrency:   'Währung',
+    stepCards:      'Kreditkarten',
+    stepGoals:      'Finanzziele',
+    typePersonalTitle:  'Persönliche Nutzung',
+    typePersonalSub:    'Persönlich, Ersparnisse, Einkommen',
+    typeFamilySoloTitle:'Familie (ohne Partner)',
+    typeFamilySoloSub:  'Persönlich, Familie, Ersparnisse',
+    typeFamilyTitle:    'Familie mit Partner',
+    typeFamilySub:      'Persönlich 1, Persönlich 2, Familie',
+    yourName:       'Ihr Name',
+    namePh1:        'z.B. Max',
+    partnerName:    'Name des Partners',
+    namePh2:        'z.B. Anna',
+    profileGreet:   (name) => `Hallo, ${name}!`,
+    dobLabel:       'Geburtsdatum (optional)',
+    dobNote:        'Zur Personalisierung der App',
+    budgetStartQ:   'An welchem Tag beginnt Ihr Budgetmonat?',
+    budgetTip:      'Die meisten wählen den 1. oder 10. des Monats',
+    budgetMonthly:  'Monatliches Budget (kann später geändert werden)',
+    personal:       'Persönlich',
+    family:         'Familie',
+    perMonth:       '/Monat',
+    catsNote:       (n) => `${n} Kategorien ausgewählt`,
+    incomeNote:     'Kann später geändert werden',
+    currencyQ:      'In welcher Währung führen Sie Ihr Budget?',
+    currencyNote:   'Währung kann pro Eintrag geändert werden',
+    cardsNote:      'Karten für Cashflow-Tracking einrichten (optional)',
+    cardName:       'Kartenname',
+    cardBillingDay: 'Abrechnungstag',
+    addCard:        '+ Karte hinzufügen',
+    goalsNote:      'Hilft uns, genaue AI-Tipps zu geben (optional)',
+    monthlySaving:  'Monatliches Sparziel',
+    emergencyFund:  'Notfallfonds aufbauen',
+    debtFree:       'Schuldenfrei werden',
+    yearlyTarget:   'Jahresziel',
+    notes:          'Notizen / weitere Ziele',
+    saving:         '⏳ Speichern...',
+    welcome:        (name) => `🎉 Willkommen, ${name}!`,
+  },
+
+  fr: {
+    stepLabel:      (n,total,label) => `Étape ${n} sur ${total} — ${label}`,
+    next:           'Continuer →',
+    back:           '← Retour',
+    finish:         'Terminer! ✅',
+    enterName:      'Veuillez entrer votre nom',
+    stepAccountType:'Type de compte',
+    stepProfile:    'Profil personnel',
+    stepBudget:     'Configuration du budget',
+    stepCatsP:      'Catégories personnelles',
+    stepCatsF:      'Catégories familiales',
+    stepIncome:     'Sources de revenus',
+    stepCurrency:   'Devise',
+    stepCards:      'Cartes bancaires',
+    stepGoals:      'Objectifs financiers',
+    typePersonalTitle:  'Usage personnel',
+    typePersonalSub:    'Personnel, épargne, revenus',
+    typeFamilySoloTitle:'Familial (sans partenaire)',
+    typeFamilySoloSub:  'Personnel, familial, épargne',
+    typeFamilyTitle:    'Familial avec partenaire',
+    typeFamilySub:      'Personnel 1, Personnel 2, Famille',
+    yourName:       'Votre nom',
+    namePh1:        'ex: Pierre',
+    partnerName:    'Nom du partenaire',
+    namePh2:        'ex: Marie',
+    profileGreet:   (name) => `Bonjour, ${name}!`,
+    dobLabel:       'Date de naissance (optionnel)',
+    dobNote:        'Pour personnaliser l\'application',
+    budgetStartQ:   'Quel jour commence votre mois budgétaire?',
+    budgetTip:      'La plupart choisissent le 1er ou le 10',
+    budgetMonthly:  'Budget mensuel (modifiable plus tard)',
+    personal:       'Personnel',
+    family:         'Famille',
+    perMonth:       '/mois',
+    catsNote:       (n) => `${n} catégories sélectionnées`,
+    incomeNote:     'Modifiable plus tard',
+    currencyQ:      'Quelle devise utiliserez-vous?',
+    currencyNote:   'La devise peut être modifiée par entrée',
+    cardsNote:      'Configurer les cartes pour le cashflow (optionnel)',
+    cardName:       'Nom de la carte',
+    cardBillingDay: 'Jour de prélèvement',
+    addCard:        '+ Ajouter une carte',
+    goalsNote:      'Aide à fournir des conseils AI précis (optionnel)',
+    monthlySaving:  "Objectif d'épargne mensuel",
+    emergencyFund:  "Constituer un fonds d'urgence",
+    debtFree:       'Devenir sans dettes',
+    yearlyTarget:   'Objectif annuel',
+    notes:          'Notes / objectifs supplémentaires',
+    saving:         '⏳ Enregistrement...',
+    welcome:        (name) => `🎉 Bienvenue, ${name}!`,
+  },
+};
+
+function obGetText(key, ...args) {
+  const texts = OB_TEXTS[_lang] || OB_TEXTS.he;
+  const val = texts[key];
+  if(typeof val === 'function') return val(...args);
+  return val || (OB_TEXTS.he[key] || key);
+}
+
+// Dynamic OB step labels using i18n
+function getOBSteps() {
+  return [
+    { id:'account_type', label:obGetText('stepAccountType'), emoji:'◈', title: _lang==='he'?'החשבון הוא עבור...':_lang==='en'?'This account is for...':_lang==='ru'?'Этот счёт для...':_lang==='ar'?'هذا الحساب لـ...':_lang==='de'?'Dieses Konto ist für...':'Ce compte est pour...' },
+    { id:'profile',      label:obGetText('stepProfile'),     emoji:'◯', title: '' }, // filled dynamically
+    { id:'budget',       label:obGetText('stepBudget'),      emoji:'◫', title: obGetText('budgetStartQ') },
+    { id:'cats_p',       label:obGetText('stepCatsP'),       emoji:'▦', title: _lang==='he'?'קטגוריות הוצאות אישיות':_lang==='en'?'Personal expense categories':'קטגוריות אישיות' },
+    { id:'cats_f',       label:obGetText('stepCatsF'),       emoji:'⌂', title: _lang==='he'?'קטגוריות הוצאות משפחה':_lang==='en'?'Family expense categories':'קטגוריות משפחה' },
+    { id:'income',       label:obGetText('stepIncome'),      emoji:'↑', title: _lang==='he'?'מאיפה מגיעות ההכנסות שלך?':_lang==='en'?'Where does your income come from?':'הכנסות' },
+    { id:'currency',     label:obGetText('stepCurrency'),    emoji:'◎', title: obGetText('currencyQ') },
+    { id:'cards',        label:obGetText('stepCards'),       emoji:'◈', title: _lang==='he'?'כרטיסי האשראי שלך':_lang==='en'?'Your credit cards':'כרטיסי אשראי' },
+    { id:'goals',        label:obGetText('stepGoals'),       emoji:'✦', title: _lang==='he'?'מה המטרות הפיננסיות שלך?':_lang==='en'?'What are your financial goals?':'מטרות' },
+  ];
+}
+
 const OB_STEPS = [
   { id:'account_type', label:'🏠 סוג חשבון',        emoji:'🏠', title:'החשבון הוא עבור...', sub:'בחר את סוג החשבון שמתאים לך ורשום שמות' },
   { id:'profile',      label:'👤 פרופיל אישי',      emoji:'👤', title:'ספרו לנו עליכם', sub:'נתאים את האפליקציה בדיוק בשבילך' },
@@ -1822,14 +2298,17 @@ function showOnboarding() {
 
 function renderObStep() { window.obData = obData; // keep in sync
 
-  const step = OB_STEPS[obStep];
-  // Progress dots
-  document.getElementById('obStepDots').innerHTML = OB_STEPS.map((s,i) =>
-    `<div class="ob-step-dot ${i<obStep?'done':i===obStep?'active':''}"></div>`
-  ).join('');
-  document.getElementById('obStepLabel').textContent = `שלב ${obStep+1} מתוך ${OB_STEPS.length} — ${step.label}`;
+  const _obSteps = getOBSteps();
+  const step = _obSteps[obStep];
+  // Progress dots — minimal line bar
+  const pct = Math.round(((obStep) / (_obSteps.length-1)) * 100);
+  document.getElementById('obStepDots').innerHTML = `
+    <div style="height:2px;background:rgba(148,163,184,.12);border-radius:2px;overflow:hidden;width:100%">
+      <div style="height:2px;background:var(--accent);width:${pct}%;transition:width .4s ease;border-radius:2px"></div>
+    </div>`;
+  document.getElementById('obStepLabel').textContent = obGetText('stepLabel', obStep+1, _obSteps.length, step.label);
   document.getElementById('obBackBtn').style.display = obStep > 0 ? 'block' : 'none';
-  document.getElementById('obNextBtn').textContent = obStep === OB_STEPS.length-1 ? '✅ סיים והתחל!' : 'המשך ←';
+  document.getElementById('obNextBtn').textContent = obStep === _obSteps.length-1 ? obGetText('finish') : obGetText('next');
 
   let html = `<div class="ob-card">
     <div class="ob-emoji">${step.emoji}</div>
@@ -1840,27 +2319,27 @@ function renderObStep() { window.obData = obData; // keep in sync
     const types = [
       {
         id: 'personal',
-        icon: '👤',
-        title: 'שימוש אישי',
-        sub: 'אישי, חיסכון, הכנסות',
-        p1label: 'שמך', p1ph: 'למשל: דניאל',
+        icon: '◯',
+        title: obGetText('typePersonalTitle'),
+        sub:   obGetText('typePersonalSub'),
+        p1label: obGetText('yourName'), p1ph: obGetText('namePh1'),
         p2: false,
       },
       {
         id: 'family_solo',
-        icon: '🏠',
-        title: 'משפחתי (ללא בן/בת זוג)',
-        sub: 'אישי, משפחה, חיסכון אישי, חיסכון משפחתי',
-        p1label: 'שמך', p1ph: 'למשל: אלירן',
+        icon: '⌂',
+        title: obGetText('typeFamilySoloTitle'),
+        sub:   obGetText('typeFamilySoloSub'),
+        p1label: obGetText('yourName'), p1ph: obGetText('namePh1'),
         p2: false,
       },
       {
         id: 'family',
-        icon: '👨‍👩‍👧',
-        title: 'משפחתי עם בן/בת זוג',
-        sub: 'אישי 1, אישי 2, משפחה, חיסכון אישי, חיסכון משפחתי',
-        p1label: 'שמך', p1ph: 'למשל: אלירן',
-        p2: true, p2label: 'שם בן/בת הזוג', p2ph: 'למשל: שירה',
+        icon: '◈',
+        title: obGetText('typeFamilyTitle'),
+        sub:   obGetText('typeFamilySub'),
+        p1label: obGetText('yourName'), p1ph: obGetText('namePh1'),
+        p2: true, p2label: obGetText('partnerName'), p2ph: obGetText('namePh2'),
       },
     ];
     html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
@@ -1895,13 +2374,24 @@ function renderObStep() { window.obData = obData; // keep in sync
 
   if(step.id === 'profile') {
     html += `
-    <div style="font-size:13px;color:#c8cce0;font-weight:600;margin-bottom:8px">👋 שלום ${obData.name||''}!</div>
-    <div style="font-size:12px;color:#7b82a8;margin-bottom:6px;font-weight:600">📅 תאריך לידה (אופציונלי)</div>
-    <input class="ob-input" id="obDob" type="date" placeholder="תאריך לידה" value="${obData.dob}"
-      style="color:${obData.dob?'#e8eaf0':'#7b82a8'};-webkit-appearance:none;"/>
-    <div style="font-size:11px;color:#7b82a8;margin-top:2px">לצורך התאמה אישית של האפליקציה</div>`;
+    <div style="font-size:16px;font-weight:600;margin-bottom:20px;color:var(--text-1)">${obGetText('profileGreet',obData.name||'')}</div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">${obGetText('dobLabel')}</div>
+    <input class="ob-input" id="obDob" type="date" placeholder="" value="${obData.dob}"
+      style="-webkit-appearance:none;appearance:none;max-width:280px"/>
+    <div style="font-size:11px;color:var(--text-3);margin-top:8px">${obGetText('dobNote')}</div>`;
   }
 
+  if(step.id === 'account_type') {
+    const p1 = document.getElementById('obP1Name');
+    const p2 = document.getElementById('obP2Name');
+    if(p1) obData.name = p1.value.trim();
+    if(p2) obData.partnerName = p2.value.trim();
+    if(!obData.name) {
+      if(p1){ p1.style.borderColor='var(--danger)'; p1.focus(); }
+      showToast(obGetText('enterName'));
+      return;
+    }
+  }
   if(step.id === 'budget') {
     html += `<div style="margin-bottom:14px">
       <div style="font-size:13px;color:#c8cce0;margin-bottom:10px;font-weight:600">ביום כמה מתחיל החודש התקציבי שלך?</div>
@@ -2176,22 +2666,17 @@ window.renderObStep = renderObStep;
 window.S = S; // shared with inline handlers
 
 window.obBack = function() {
-  if(obStep > 0) { obStep--; renderObStep(); }
+  if(obStep > 0) { obStep--; renderObStep(); return; }
 };
 
 window.obNext = async function() {
   const step = OB_STEPS[obStep];
   // Validate
   if(step.id === 'profile') {
-    const nameEl = document.getElementById('obName');
-    const dobEl  = document.getElementById('obDob');
-    if(nameEl) obData.name = nameEl.value.trim();
-    if(dobEl)  obData.dob  = dobEl.value;
-    if(!obData.name) {
-      const el = document.getElementById('obName');
-      if(el){ el.style.borderColor='#f87171'; el.placeholder='נא להזין שם'; el.focus(); }
-      return;
-    }
+    // Name already collected in account_type step (obP1Name → obData.name)
+    // Just save DOB and continue — DOB is optional
+    const dobEl = document.getElementById('obDob');
+    if(dobEl) obData.dob = dobEl.value;
   }
   if(step.id === 'budget') {
     const p = document.querySelector('[data-ob="budgetP"]');
@@ -2199,7 +2684,7 @@ window.obNext = async function() {
     if(p) obData.monthlyBudgetP = p.value;
     if(f) obData.monthlyBudgetF = f.value;
   }
-  if(obStep < OB_STEPS.length - 1) {
+  if(obStep < getOBSteps().length - 1) {
     obStep++;
     renderObStep();
     document.getElementById('obScreen').scrollTop = 0;
@@ -2211,7 +2696,7 @@ window.obNext = async function() {
 
 async function applyOnboarding() {
   const btn = document.getElementById('obNextBtn');
-  btn.textContent = '⏳ שומר…'; btn.disabled = true;
+  btn.textContent = obGetText('saving'); btn.disabled = true;
 
   // Build income types list
   const incomeTypes = OB_INCOME_TYPES
@@ -2265,7 +2750,7 @@ async function applyOnboarding() {
   document.getElementById('app').style.display = 'block';
   S.tab = 'dashboard';
   render();
-  showToast('🎉 ברוך הבא ל-תקציב, ' + obData.name.trim() + '!');
+  showToast(obGetText('welcome', obData.name.trim()));
 }
 
 
@@ -7561,46 +8046,69 @@ function renderLandingScreen() {
   const L = LANGS[_lang]||LANGS.he;
   const dir = L.dir;
   el.dir = dir;
-  el.style.background = 'radial-gradient(ellipse 80% 40% at 50% -5%,rgba(13,216,128,0.07) 0%,transparent 60%),#09090B';
-  el.style.fontFamily = "'Heebo',sans-serif";
-  el.innerHTML = `
-    <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;max-width:440px;margin:0 auto;box-sizing:border-box">
+  el.style.cssText = 'position:fixed;inset:0;z-index:500;overflow-y:auto;font-family:\'Heebo\',sans-serif;background:#020617;';
 
-      <!-- Brand -->
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="width:58px;height:58px;background:rgba(13,216,128,0.15);border:1px solid rgba(13,216,128,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">💰</div>
-        <div style="font-size:32px;font-weight:900;color:#f0f2ff;letter-spacing:-1.5px">תקציב</div>
-        <div style="font-size:14px;color:#5a6080;margin-top:7px">${L.appTagline}</div>
+  // Feature descriptions by language
+  const FEATS = [
+    { icon:'◎', he:'תזרים חכם', en:'Smart Cash Flow', ru:'Умный кэшфлоу', ar:'تدفق ذكي', de:'Cashflow', fr:'Flux intelligent' },
+    { icon:'◈', he:'חיסכון מונחה', en:'Guided Savings', ru:'Накопления', ar:'ادخار موجّه', de:'Sparziele', fr:'Épargne guidée' },
+    { icon:'✦', he:'יועץ AI', en:'AI Advisor', ru:'AI-советник', ar:'مستشار AI', de:'KI-Berater', fr:'Conseiller IA' },
+    { icon:'◫', he:'מבט שנתי', en:'Annual View', ru:'Годовой обзор', ar:'عرض سنوي', de:'Jahresübersicht', fr:'Vue annuelle' },
+    { icon:'⊞', he:'לוח בקרה', en:'Dashboard', ru:'Дашборд', ar:'لوحة التحكم', de:'Dashboard', fr:'Tableau de bord' },
+    { icon:'▦', he:'דוחות מפורטים', en:'Detailed Reports', ru:'Отчёты', ar:'تقارير مفصلة', de:'Berichte', fr:'Rapports' },
+  ];
+  const featLabel = f => f[_lang] || f.en;
+
+  el.innerHTML = `
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;max-width:400px;margin:0 auto;box-sizing:border-box;gap:0">
+
+      <!-- Logo mark -->
+      <div style="width:56px;height:56px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:24px;flex-shrink:0">◈</div>
+
+      <!-- Headline -->
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:36px;font-weight:800;color:#F8FAFC;letter-spacing:-1.5px;line-height:1;margin-bottom:10px">תקציב</div>
+        <div style="font-size:15px;color:#64748B;line-height:1.5">${L.appTagline}</div>
       </div>
 
-      <!-- Features grid -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-bottom:20px">
-        ${FEATURE_KEYS.map(f=>`
-          <div style="background:#111113;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 8px;text-align:center">
-            <div style="font-size:20px;margin-bottom:6px">${f.icon}</div>
-            <div style="font-size:10px;font-weight:600;color:#9ca3af;line-height:1.4">${getLangText(f)}</div>
+      <!-- Feature pills — clean row layout -->
+      <div style="display:flex;flex-direction:column;gap:1px;width:100%;margin-bottom:32px;background:rgba(148,163,184,.06);border-radius:16px;overflow:hidden">
+        ${FEATS.map((f,i)=>`
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:#0B1120;${i>0?'border-top:1px solid rgba(148,163,184,.06)':''}">
+            <span style="font-size:16px;color:#475569;flex-shrink:0;width:20px;text-align:center">${f.icon}</span>
+            <span style="font-size:13px;font-weight:500;color:#94A3B8">${featLabel(f)}</span>
           </div>`).join('')}
       </div>
 
-      <!-- Lang bar -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:18px">
-        ${buildLangBar()}
+      <!-- Language selector -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:24px">
+        ${Object.entries(LANGS).map(([code,L2])=>`
+          <button onclick="window.setLang('${code}')"
+            style="padding:6px 14px;border-radius:20px;border:1px solid ${_lang===code?'rgba(16,185,129,.4)':'rgba(148,163,184,.1)'};background:${_lang===code?'rgba(16,185,129,.12)':'transparent'};color:${_lang===code?'#10B981':'#64748B'};font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;font-weight:${_lang===code?'600':'400'};transition:all .15s">
+            <span style="font-size:14px">${L2.flag}</span>${L2.name}
+          </button>`).join('')}
       </div>
 
       <!-- CTAs -->
       <div style="width:100%;display:flex;flex-direction:column;gap:10px">
         <button id="landingNewBtn"
-          style="width:100%;padding:16px;background:#0DD880;border:none;border-radius:13px;color:#000;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 24px rgba(13,216,128,.3);transition:opacity .18s">
+          style="width:100%;padding:16px;background:#10B981;border:none;border-radius:12px;color:#000;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:-.2px;transition:opacity .15s"
+          onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           ${L.newUser}
         </button>
         <button id="landingExistBtn"
-          style="width:100%;padding:14px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:13px;color:#6c6f8a;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+          style="width:100%;padding:15px;background:transparent;border:1px solid rgba(148,163,184,.12);border-radius:12px;color:#475569;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s"
+          onmouseover="this.style.borderColor='rgba(148,163,184,.25)';this.style.color='#94A3B8'" onmouseout="this.style.borderColor='rgba(148,163,184,.12)';this.style.color='#475569'">
           ${L.existingUser}
         </button>
       </div>
+
+      <!-- Legal note -->
+      <div style="margin-top:20px;font-size:10px;color:#1E293B;text-align:center;line-height:1.6">
+        BETA · Free · No credit card required
+      </div>
     </div>`;
 
-  // Re-wire buttons
   initLanding();
 }
 
