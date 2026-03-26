@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Heebo:wght@300;400;500;700;900&display=swap');
+@import "tailwindcss";
+
+/* ── Design tokens (matches Stitch palette) ── */
+@theme {
+  --font-headline: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Heebo", "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  /* Surface hierarchy */
+  --color-surface:                  #0b1326;
+  --color-surface-container-lowest: #060e20;
+  --color-surface-container-low:    #131b2e;
+  --color-surface-container-high:   #222a3d;
+  --color-surface-container-highest:#2d3449;
+
+  /* Brand colors */
+  --color-primary:           #4edea3;
+  --color-primary-container: #10b981;
+  --color-on-primary:        #003824;
+
+  --color-secondary:           #c0c1ff;
+  --color-secondary-container: #3131c0;
+  --color-on-secondary:        #0a0a3a;
+
+  --color-tertiary:           #ffb3af;
+  --color-tertiary-container: #fc7c78;
+
+  /* Text */
+  --color-on-surface:         #dae2fd;
+  --color-on-surface-variant: #bbcabf;
+
+  /* Borders */
+  --color-outline-variant:    #3c4a42;
+  --color-error:              #ffb4ab;
+  --color-error-container:    #93000a;
+}
+
+/* ── Base ── */
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+    direction: rtl;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+/* ── Glass card utility ── */
+.glass-card {
+  background: rgba(45, 52, 73, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Scrollbar ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+/* ── RTL / LTR direction utilities ── */
+.direction-rtl { direction: rtl; }
+.direction-ltr { direction: ltr; }
+
+/* ── Safe areas (iPhone home bar) ── */
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Prevent iOS input zoom ── */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Mobile bottom nav height ── */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Animation ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Focus ring ── */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Prevent scrollbar jump ── */
+html { scrollbar-gutter: stable; }

@@ -1,7 +1,12 @@
 [build]
+  command   = "npm install && npm run build"
+  publish   = "dist"
   functions = "netlify/functions"
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

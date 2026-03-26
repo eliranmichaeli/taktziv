@@ -1,54 +1,50 @@
-exports.handler = async function(event) {
-  if(event.httpMethod !== 'POST') {
+// netlify/functions/claude.js
+// This serverless function proxies requests to the Anthropic API
+// keeping your API key secure on the server side
+
+exports.handler = async (event) => {
+  // Only allow POST
+  if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
-  if(!GROQ_API_KEY) {
-    return { statusCode: 500, body: JSON.stringify({error: 'API key not configured'}) };
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!ANTHROPIC_KEY) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'API key not configured' }),
+    };
   }
 
   try {
-    const body = JSON.parse(event.body);
-    const prompt = body.messages?.[0]?.content || '';
+    const body = JSON.parse(event.body || '{}');
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Content-Type':      'application/json',
+        'x-api-key':         ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1000,
-        temperature: 0.7
-      })
+        model:      body.model      || 'claude-sonnet-4-6',
+        max_tokens: body.max_tokens || 1024,
+        system:     body.system,
+        messages:   body.messages   || [],
+      }),
     });
 
     const data = await response.json();
 
-    if(!response.ok) {
-      return {
-        statusCode: response.status,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: data.error?.message || JSON.stringify(data) })
-      };
-    }
-
-    const text = data?.choices?.[0]?.message?.content || 'לא הצלחתי לנתח, נסה שוב';
-
     return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ content: [{ type: 'text', text: text }] })
+      statusCode: response.status,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     };
-
-  } catch(e) {
+  } catch (err) {
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: e.message })
+      body: JSON.stringify({ error: err.message }),
     };
   }
 };
