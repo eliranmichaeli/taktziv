@@ -215,7 +215,7 @@ export const fmtSigned = (amount: number, symbol: string): string =>
 
 // ── Date helpers ──────────────────────────────────────
 export const today = (): string => new Date().toISOString().split('T')[0];
-export const uid   = (): string => 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+export const uid = (): string => crypto.randomUUID();
 
 export const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 export const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];

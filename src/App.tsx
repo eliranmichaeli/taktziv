@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AppProvider, useApp } from './context/AppContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar, TopBar, MobileBottomNav } from './components/Navigation';
 import { Dashboard }   from './components/Dashboard';
 import { Expenses }    from './components/Expenses';
@@ -64,6 +65,7 @@ const Content: React.FC = () => {
 };
 
 const InnerApp: React.FC = () => {
+  // Fix: original bug — tab was missing from destructuring, causing "tab is not defined"
   const { user, authReady, db, lang, tab } = useApp();
   const rtl = isRTL(lang);
 
@@ -107,10 +109,14 @@ const InnerApp: React.FC = () => {
   );
 };
 
+// Fix: HIGH-04 — wrap everything in ErrorBoundary to prevent financial data
+// from leaking in unhandled React render errors.
 export default function App() {
   return (
-    <AppProvider>
-      <InnerApp />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <InnerApp />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

@@ -14,9 +14,11 @@ import {
   loadDB,
   saveDB,
   defaultDB,
+  authSignOut,
   type User,
 } from '../lib/firebase';
 import { isRTL } from '../lib/i18n';
+import { uiStore, startSessionTimeout, clearSessionTimeout } from '../lib/session';
 
 // ── State Shape ───────────────────────────────────────
 interface AppContextState {
@@ -42,13 +44,17 @@ type Action =
 
 const now = new Date();
 
+// Fix: CRIT-06 — use uiStore helper instead of direct localStorage access.
+// uiStore only stores non-sensitive UI preferences (lang) — never financial data.
+const savedLang = uiStore.get('lang') as LangCode | null;
+
 const initialState: AppContextState = {
   user:       null,
   db:         defaultDB(),
   month:      now.getMonth(),
   year:       now.getFullYear(),
   tab:        'dashboard',
-  lang:       (localStorage.getItem('lang') as LangCode) || 'he',
+  lang:       savedLang || 'he',
   syncStatus: 'offline',
   authReady:  false,
 };
@@ -97,35 +103,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const data = await loadDB(user.uid);
         dispatch({ type: 'SET_DB', db: data });
         dispatch({ type: 'SET_SYNC', status: 'online' });
+      } else {
+        // User signed out — reset DB to default (no stale data in memory)
+        dispatch({ type: 'SET_DB', db: defaultDB() });
       }
       dispatch({ type: 'SET_AUTH_READY' });
     });
     return unsub;
   }, []);
 
+  // Fix: HIGH-06 — session timeout: auto-logout after 30 min of inactivity
+  useEffect(() => {
+    if (state.user) {
+      startSessionTimeout(authSignOut);
+    } else {
+      clearSessionTimeout();
+    }
+    return clearSessionTimeout;
+  }, [state.user]);
+
   // Apply RTL/LTR
   useEffect(() => {
     const dir = isRTL(state.lang) ? 'rtl' : 'ltr';
     document.documentElement.dir  = dir;
     document.documentElement.lang = state.lang;
-    localStorage.setItem('lang', state.lang);
+    uiStore.set('lang', state.lang); // Fix: CRIT-06 — use uiStore (non-sensitive key only)
   }, [state.lang]);
 
   // Debounced save
+  // Fix: MED-09 — guard against user becoming null between timer schedule and fire
   const updateDB = useCallback(async (updater: (db: AppDB) => AppDB) => {
     if (!state.user) return;
+    const uid   = state.user.uid; // capture before async gap
     const newDB = updater(state.db);
     dispatch({ type: 'SET_DB', db: newDB });
     dispatch({ type: 'SET_SYNC', status: 'syncing' });
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      await saveDB(state.user!.uid, newDB);
-      dispatch({ type: 'SET_SYNC', status: 'online' });
+      try {
+        await saveDB(uid, newDB);  // use captured uid — safe if auth changes
+        dispatch({ type: 'SET_SYNC', status: 'online' });
+      } catch (err) {
+        console.error('[AppContext] saveDB failed:', err);
+        dispatch({ type: 'SET_SYNC', status: 'offline' });
+      }
     }, 800);
   }, [state.user, state.db]);
 
-  const setTab   = useCallback((tab: TabId)  => dispatch({ type: 'SET_TAB', tab }), []);
-  const setMonth = useCallback((month: number, year: number) => dispatch({ type: 'SET_MONTH', month, year }), []);
+  const setTab   = useCallback((tab: TabId)   => dispatch({ type: 'SET_TAB',   tab }),    []);
+  const setMonth = useCallback((month: number, year: number) =>
+    dispatch({ type: 'SET_MONTH', month, year }), []);
   const setLang  = useCallback((lang: LangCode) => dispatch({ type: 'SET_LANG', lang }), []);
 
   return (

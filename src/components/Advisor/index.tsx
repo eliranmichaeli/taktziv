@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../context/AppContext';
+import { auth } from '../../lib/firebase'; // Fix: CRIT-05 — needed for getIdToken
 import { t } from '../../lib/i18n';
 import {
   totalInc, totalExp, fixedTotal, varTotal,
@@ -27,14 +28,14 @@ export const Advisor: React.FC = () => {
   const [scope,     setScope]     = useState<'all' | ScopeType>('all');
   const messagesEnd = useRef<HTMLDivElement>(null);
 
-  const sym    = getCurrencySymbol(db);
-  const p      = db.settings.profile;
+  const sym        = getCurrencySymbol(db);
+  const p          = db.settings.profile;
   const hasPartner = p.accountType === 'family' && !!p.partnerName;
   const isFamily   = p.accountType !== 'personal';
-  const health = calcHealthScore(db, month, year);
+  const health     = calcHealthScore(db, month, year);
 
   const scopes = [
-    { id: 'all' as const, label: 'כולם' },
+    { id: 'all' as const,          label: 'כולם' },
     { id: 'personal' as ScopeType, label: hasPartner ? p.name || 'אישי' : 'אישי' },
     ...(hasPartner ? [{ id: 'personal2' as ScopeType, label: p.partnerName || 'משתמש 2' }] : []),
     ...(isFamily   ? [{ id: 'family'    as ScopeType, label: 'משפחה' }] : []),
@@ -45,8 +46,8 @@ export const Advisor: React.FC = () => {
   }, [messages, loading]);
 
   const buildContext = () => {
-    const inc = totalInc(db, month, year);
-    const exp = totalExp(db, month, year);
+    const inc     = totalInc(db, month, year);
+    const exp     = totalExp(db, month, year);
     const savings = (db.savings || []).map(s =>
       `${s.name}: נצבר ${sym}${Math.round(calcSavingsCurrent(s)).toLocaleString('he-IL')}${s.target ? ` מתוך ${sym}${s.target.toLocaleString('he-IL')}` : ''}`
     );
@@ -70,6 +71,7 @@ export const Advisor: React.FC = () => {
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
+
     const userMsg: ChatMessage = { role: 'user', text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -85,17 +87,26 @@ export const Advisor: React.FC = () => {
       .map(m => ({ role: m.role === 'ai' ? 'assistant' as const : 'user' as const, content: m.text }));
 
     try {
+      // Fix: CRIT-05 — get Firebase ID token and send with request for server auth
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error('לא מחובר — נסה להתחבר מחדש');
+
       const resp = await fetch('/.netlify/functions/claude', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${idToken}`,  // server verifies this
+        },
         body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 900, system, messages: history }),
       });
+
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error?.message || 'שגיאת שרת');
+      if (!resp.ok) throw new Error(data.error ?? 'שגיאת שרת');
       const reply = data.content?.[0]?.text || 'לא הצלחתי לענות';
       setMessages(prev => [...prev, { role: 'ai', text: reply }]);
-    } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'ai', text: `שגיאה: ${e.message}` }]);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'שגיאה לא ידועה';
+      setMessages(prev => [...prev, { role: 'ai', text: `שגיאה: ${msg}` }]);
     }
     setLoading(false);
   };
@@ -110,13 +121,21 @@ export const Advisor: React.FC = () => {
         <div className="flex-1">
           <div className="font-bold">יועץ פיננסי AI</div>
           <div className="text-xs text-on-surface-variant mt-0.5">
-            ציון בריאות: <span className={cn('font-bold', health >= 70 ? 'text-primary' : health >= 50 ? 'text-secondary' : 'text-error')}>{health}/100</span>
+            ציון בריאות:{' '}
+            <span className={cn('font-bold', health >= 70 ? 'text-primary' : health >= 50 ? 'text-secondary' : 'text-error')}>
+              {health}/100
+            </span>
           </div>
+        </div>
+        {/* Privacy notice */}
+        <div className="text-[10px] text-on-surface-variant text-left max-w-[140px] leading-relaxed">
+          נתונים פיננסיים מועברים ל-AI לצורך ניתוח בלבד
         </div>
       </div>
 
-      {/* Scope */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Scope selector */}
+      <div className="flex gap-2 flex-wrap items-center">
+        <span className="text-xs text-on-surface-variant">הצג נתונים של:</span>
         {scopes.map(s => (
           <button
             key={s.id}
@@ -131,7 +150,6 @@ export const Advisor: React.FC = () => {
             {s.label}
           </button>
         ))}
-        <span className="text-xs text-on-surface-variant self-center">הצג נתונים של:</span>
       </div>
 
       {/* Messages */}
