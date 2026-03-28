@@ -1,96 +1,145 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, Plus } from 'lucide-react';
+import { AlertTriangle, Lightbulb, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../lib/i18n';
 import {
-  totalInc, totalExp, balance, fixedTotal, varTotal,
+  totalInc, totalExp, fixedTotal, varTotal,
   incTotal, getMonthBudget, getAlerts, getCurrencySymbol,
   calcHealthScore, MONTHS_HE,
-  fmt, fmtSigned,
 } from '../../lib/calculations';
 import type { ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
 
-// ── Stat card ────────────────────────────────────────
-const StatCard: React.FC<{
-  label: string;
-  value: string;
-  sub?: string;
-  accent?: boolean;
-  warn?: boolean;
-  delay?: number;
-}> = ({ label, value, sub, accent, warn, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-    className={cn(
-      'rounded-2xl p-6 border border-outline-variant/5 relative overflow-hidden',
-      accent ? 'bg-primary/8' : warn ? 'bg-tertiary/8' : 'bg-surface-container-low'
-    )}
-  >
-    <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">{label}</div>
-    <div className={cn(
-      'text-3xl font-black tracking-tight font-headline',
-      accent ? 'text-primary' : warn ? 'text-tertiary' : 'text-on-surface'
-    )}>
-      {value}
-    </div>
-    {sub && <div className="text-xs text-on-surface-variant mt-2">{sub}</div>}
-  </motion.div>
-);
-
-// ── Budget progress bar ───────────────────────────────
-const BudgetBar: React.FC<{ label: string; spent: number; budget: number; sym: string }> = ({
-  label, spent, budget, sym,
-}) => {
-  if (budget <= 0) return null;
-  const pct    = Math.min(100, Math.round(spent / budget * 100));
-  const isOver = pct >= 100;
-  const isWarn = pct >= 80;
+// ── Progress bar ──────────────────────────────────────
+const ProgressBar: React.FC<{ pct: number; color?: string }> = ({ pct, color }) => {
+  const c = pct >= 100 ? 'bg-error' : pct >= 80 ? 'bg-tertiary' : color || 'bg-primary';
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs">
-        <span className="text-on-surface-variant font-medium">{label}</span>
-        <span className={cn('font-bold', isOver ? 'text-error' : isWarn ? 'text-tertiary' : 'text-on-surface-variant')}>
-          {sym}{Math.round(spent).toLocaleString('he-IL')} / {sym}{budget.toLocaleString('he-IL')} ({pct}%)
-        </span>
-      </div>
-      <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-        <motion.div
-          className={cn('h-full rounded-full', isOver ? 'bg-error' : isWarn ? 'bg-tertiary' : 'bg-primary')}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        />
-      </div>
+    <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+      <motion.div
+        className={cn('h-full rounded-full', c)}
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.min(100, pct)}%` }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      />
     </div>
+  );
+};
+
+// ── Person card ───────────────────────────────────────
+const PersonCard: React.FC<{
+  label: string;
+  initial: string;
+  color: 'blue' | 'amber' | 'muted';
+  inc: number;
+  exp: number;
+  budget: number;
+  emergency: number;
+  sym: string;
+  delay: number;
+}> = ({ label, initial, color, inc, exp, budget, emergency, sym, delay }) => {
+  const net  = inc - exp;
+  const pct  = budget > 0 ? Math.round(exp / budget * 100) : 0;
+  const colors = {
+    blue:  { bg: 'bg-primary/10',    text: 'text-primary',    avatar: 'bg-primary/15 text-primary' },
+    amber: { bg: 'bg-secondary/10',  text: 'text-secondary',  avatar: 'bg-secondary/15 text-secondary' },
+    muted: { bg: 'bg-surface-container-high', text: 'text-on-surface-variant', avatar: 'bg-surface-container-highest text-on-surface-variant' },
+  };
+  const c = colors[color];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="bg-surface-container-low rounded-2xl p-5 border border-outline-variant/5"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0', c.avatar)}>
+          {initial}
+        </div>
+        <span className="font-bold text-sm text-on-surface">{label}</span>
+      </div>
+
+      {/* Income / Expenses */}
+      <div className="space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-on-surface-variant">הכנסות</span>
+          <span className="text-sm font-bold text-primary">{sym}{Math.round(inc).toLocaleString('he-IL')}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-on-surface-variant">הוצאות</span>
+          <span className="text-sm font-bold text-error">{sym}{Math.round(exp).toLocaleString('he-IL')}</span>
+        </div>
+      </div>
+
+      {/* Budget progress */}
+      {budget > 0 && (
+        <div className="mb-3">
+          <ProgressBar pct={pct} />
+          <div className="flex justify-between mt-1.5">
+            <span className="text-[10px] text-on-surface-variant">{pct}% מהתקציב</span>
+            <span className={cn('text-[10px] font-bold', net >= 0 ? 'text-primary' : 'text-error')}>
+              {net >= 0 ? '+' : ''}{sym}{Math.round(net).toLocaleString('he-IL')}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Net (if no budget) */}
+      {budget <= 0 && (
+        <div className="flex justify-between items-center mb-3 pt-2 border-t border-outline-variant/8">
+          <span className="text-xs text-on-surface-variant">יתרה</span>
+          <span className={cn('text-sm font-bold', net >= 0 ? 'text-primary' : 'text-error')}>
+            {net >= 0 ? '+' : ''}{sym}{Math.round(net).toLocaleString('he-IL')}
+          </span>
+        </div>
+      )}
+
+      {/* Emergency fund */}
+      {emergency > 0 && (
+        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/8">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck size={13} className="text-primary opacity-70" />
+            <span className="text-[11px] text-on-surface-variant">קרן חירום</span>
+          </div>
+          <span className="text-[12px] font-bold text-primary">{sym}{Math.round(emergency).toLocaleString('he-IL')}</span>
+        </div>
+      )}
+    </motion.div>
   );
 };
 
 // ── Dashboard ─────────────────────────────────────────
 export const Dashboard: React.FC = () => {
-  const { db, month, year, lang, setTab, updateDB } = useApp();
-  const sym   = getCurrencySymbol(db);
-  const p     = db.settings.profile;
+  const { db, month, year, lang, setTab } = useApp();
+  const sym        = getCurrencySymbol(db);
+  const p          = db.settings.profile;
   const isFamily   = p.accountType !== 'personal';
   const hasPartner = p.accountType === 'family' && !!p.partnerName;
 
-  const inc   = totalInc(db, month, year);
-  const exp   = totalExp(db, month, year);
-  const bal   = balance(db, month, year);
+  const inc    = totalInc(db, month, year);
+  const exp    = totalExp(db, month, year);
+  const net    = inc - exp;
   const savePct = inc > 0 ? Math.round(((inc - exp) / inc) * 100) : 0;
-
-  const budP  = getMonthBudget(db, 'personal', month, year);
-  const budF  = getMonthBudget(db, 'family', month, year);
-  const expP  = fixedTotal(db, 'personal') + varTotal(db, 'personal', month, year);
-  const expF  = fixedTotal(db, 'family') + varTotal(db, 'family', month, year);
-  const alerts = getAlerts(db, month, year);
-  const health = calcHealthScore(db, month, year);
-
-  const MONTHS = MONTHS_HE;
+  const alerts  = getAlerts(db, month, year);
+  const health  = calcHealthScore(db, month, year);
+  const MONTHS  = MONTHS_HE;
   const monthLabel = `${MONTHS[month]} ${year}`;
+
+  const ef = db.settings.emergencyFunds || {};
+
+  // Per-user data
+  type UserRow = {
+    label: string; initial: string; stype: ScopeType;
+    color: 'blue' | 'amber' | 'muted'; emergency: number;
+  };
+  const userRows: UserRow[] = [
+    { label: hasPartner ? p.name || t(lang,'personal') : t(lang,'personal'), initial: (p.name || 'א').charAt(0), stype: 'personal',  color: 'blue',  emergency: ef.personal  || 0 },
+    ...(hasPartner ? [{ label: p.partnerName || '', initial: (p.partnerName || 'מ').charAt(0), stype: 'personal2' as ScopeType, color: 'amber' as const, emergency: ef.personal2 || 0 }] : []),
+    ...(isFamily   ? [{ label: t(lang,'family'), initial: 'מ', stype: 'family'    as ScopeType, color: 'muted'  as const, emergency: ef.family    || 0 }] : []),
+  ];
 
   // Recent transactions
   const recent = [...(db.variable || [])]
@@ -98,16 +147,10 @@ export const Dashboard: React.FC = () => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  // User rows
-  type UserRow = { label: string; stype: ScopeType; color: string };
-  const userRows: UserRow[] = [
-    { label: hasPartner ? p.name || t(lang, 'personal') : t(lang, 'personal'), stype: 'personal', color: 'text-primary' },
-    ...(hasPartner ? [{ label: p.partnerName || '', stype: 'personal2' as ScopeType, color: 'text-secondary' }] : []),
-    ...(isFamily   ? [{ label: t(lang, 'family'), stype: 'family' as ScopeType, color: 'text-tertiary' }] : []),
-  ];
+  const totalEmergency = (ef.personal || 0) + (ef.personal2 || 0) + (ef.family || 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Alerts */}
       {alerts.length > 0 && (
         <motion.div
@@ -120,146 +163,151 @@ export const Dashboard: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Hero */}
+      {/* Hero — יתרה כוללת */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="space-y-2"
+        transition={{ duration: 0.3 }}
+        className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5"
       >
-        <div className="text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.14em]">
-          {monthLabel} — {t(lang, 'balance')}
+        <div className="text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.14em] mb-1">
+          {monthLabel} — סיכום חודשי
         </div>
-        <div className={cn(
-          'text-5xl font-black tracking-[-2px] leading-none font-headline',
-          bal >= 0 ? 'text-on-surface' : 'text-error'
-        )}>
-          {bal < 0 ? '−' : ''}{sym}{Math.abs(Math.round(bal)).toLocaleString('he-IL')}
+        <div className={cn('text-5xl font-black tracking-[-2px] leading-none font-headline mb-3', net >= 0 ? 'text-on-surface' : 'text-error')}>
+          {net < 0 ? '−' : ''}{sym}{Math.abs(Math.round(net)).toLocaleString('he-IL')}
         </div>
-        <div className="flex items-center gap-4 text-sm text-on-surface-variant pt-1">
-          <span>{t(lang, 'income')} <strong className="text-primary">{sym}{Math.round(inc).toLocaleString('he-IL')}</strong></span>
+        <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-4">
+          <span>הכנסות <strong className="text-primary">{sym}{Math.round(inc).toLocaleString('he-IL')}</strong></span>
           <span className="text-outline-variant">·</span>
-          <span>{t(lang, 'expenses')} <strong className="text-on-surface">{sym}{Math.round(exp).toLocaleString('he-IL')}</strong></span>
-          {savePct > 0 && <>
-            <span className="text-outline-variant">·</span>
-            <span>חיסכון <strong className="text-primary">{savePct}%</strong></span>
-          </>}
+          <span>הוצאות <strong className="text-on-surface">{sym}{Math.round(exp).toLocaleString('he-IL')}</strong></span>
+          {savePct > 0 && (
+            <>
+              <span className="text-outline-variant">·</span>
+              <span>נחסך <strong className="text-primary">{savePct}%</strong></span>
+            </>
+          )}
+        </div>
+
+        {/* Health score */}
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">בריאות פיננסית</div>
+          <div className="flex-1">
+            <ProgressBar
+              pct={health}
+              color={health >= 70 ? 'bg-primary' : health >= 50 ? 'bg-secondary' : 'bg-tertiary'}
+            />
+          </div>
+          <div className={cn('text-xs font-bold', health >= 70 ? 'text-primary' : health >= 50 ? 'text-secondary' : 'text-tertiary')}>
+            {health}/100
+          </div>
         </div>
       </motion.div>
 
-      {/* Budget bars */}
-      {(budP > 0 || budF > 0) && (
-        <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5 space-y-4">
-          <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">מעקב תקציב</div>
-          {budP > 0 && <BudgetBar label={hasPartner ? p.name || t(lang, 'personal') : t(lang, 'personal')} spent={expP} budget={budP} sym={sym} />}
-          {budF > 0 && <BudgetBar label={t(lang, 'family')} spent={expF} budget={budF} sym={sym} />}
+      {/* Per-person cards */}
+      <div>
+        <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-3">לפי חשבון</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {userRows.map((u, i) => (
+            <PersonCard
+              key={u.stype}
+              label={u.label}
+              initial={u.initial}
+              color={u.color}
+              inc={incTotal(db, u.stype, month, year)}
+              exp={fixedTotal(db, u.stype) + varTotal(db, u.stype, month, year)}
+              budget={getMonthBudget(db, u.stype === 'family' ? 'family' : 'personal', month, year)}
+              emergency={u.emergency}
+              sym={sym}
+              delay={i * 0.08}
+            />
+          ))}
         </div>
-      )}
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t(lang, 'income')}   value={sym + Math.round(inc).toLocaleString('he-IL')} accent delay={0} />
-        <StatCard label={t(lang, 'expenses')} value={sym + Math.round(exp).toLocaleString('he-IL')} delay={0.05} />
-        {userRows.slice(0, 2).map((u, i) => (
-          <StatCard
-            key={u.stype}
-            label={u.label}
-            value={sym + Math.round(fixedTotal(db, u.stype) + varTotal(db, u.stype, month, year)).toLocaleString('he-IL')}
-            delay={0.1 + i * 0.05}
-          />
-        ))}
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Per-user breakdown */}
-        {userRows.length > 1 && (
-          <div className="col-span-12 lg:col-span-5 bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5">
-            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-5">פירוט לפי חשבון</div>
-            <div className="space-y-0">
-              {userRows.map(u => {
-                const uInc = incTotal(db, u.stype, month, year);
-                const uExp = fixedTotal(db, u.stype) + varTotal(db, u.stype, month, year);
-                const net  = uInc - uExp;
-                return (
-                  <div key={u.stype} className="flex items-center justify-between py-3.5 border-b border-outline-variant/8 last:border-0">
-                    <div className="flex items-center gap-2.5">
-                      <div className={cn('w-1.5 h-8 rounded-full', u.stype === 'personal' ? 'bg-primary' : u.stype === 'personal2' ? 'bg-secondary' : 'bg-tertiary')} />
-                      <div>
-                        <div className="text-sm font-semibold text-on-surface">{u.label}</div>
-                        <div className="text-[11px] text-on-surface-variant">
-                          {t(lang, 'income')} {sym}{Math.round(uInc).toLocaleString('he-IL')} / {t(lang, 'expenses')} {sym}{Math.round(uExp).toLocaleString('he-IL')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={cn('text-base font-black font-headline', net >= 0 ? 'text-primary' : 'text-error')}>
-                      {net >= 0 ? '' : '−'}{sym}{Math.abs(Math.round(net)).toLocaleString('he-IL')}
-                    </div>
-                  </div>
-                );
-              })}
+      {/* קרן חירום כוללת */}
+      {totalEmergency > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-primary/5 border border-primary/15 rounded-2xl p-5 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <ShieldCheck size={22} className="text-primary" />
+            <div>
+              <div className="font-bold text-sm text-on-surface">קרן חירום כוללת</div>
+              <div className="text-xs text-on-surface-variant mt-0.5">
+                {[
+                  ef.personal  ? `${p.name || 'אישי'}: ${sym}${Math.round(ef.personal).toLocaleString('he-IL')}` : null,
+                  ef.personal2 ? `${p.partnerName || 'משתמש 2'}: ${sym}${Math.round(ef.personal2).toLocaleString('he-IL')}` : null,
+                  ef.family    ? `משפחה: ${sym}${Math.round(ef.family).toLocaleString('he-IL')}` : null,
+                ].filter(Boolean).join(' · ')}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Recent transactions */}
-        <div className={cn(
-          'col-span-12 bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5',
-          userRows.length > 1 ? 'lg:col-span-7' : 'lg:col-span-8'
-        )}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">תנועות אחרונות</div>
-            <button
-              onClick={() => setTab('personal')}
-              className="text-primary text-xs font-bold hover:underline"
-            >
-              הכל →
-            </button>
+          <div className="text-2xl font-black text-primary font-headline">
+            {sym}{Math.round(totalEmergency).toLocaleString('he-IL')}
           </div>
+        </motion.div>
+      )}
+
+      {/* תנועות אחרונות */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">תנועות אחרונות</div>
+          <button onClick={() => setTab('personal')} className="text-primary text-xs font-bold hover:underline">
+            כל התנועות →
+          </button>
+        </div>
+        <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5 overflow-hidden">
           {recent.length === 0 ? (
-            <div className="text-center py-8 text-on-surface-variant text-sm">
-              <div className="mb-3 text-2xl opacity-30">◎</div>
+            <div className="text-center py-10 text-on-surface-variant text-sm">
+              <div className="text-2xl mb-2 opacity-30">◎</div>
               אין תנועות החודש
             </div>
           ) : (
-            <div className="space-y-0">
-              {recent.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between py-3.5 border-b border-outline-variant/6 last:border-0 group hover:bg-surface-container-high/30 rounded-lg px-2 -mx-2 transition-colors cursor-default">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold text-on-surface truncate">{tx.name}</div>
-                    <div className="text-[11px] text-on-surface-variant">{tx.category}{tx.date ? ` · ${tx.date}` : ''}</div>
-                  </div>
-                  <div className="text-[14px] font-bold text-error flex-shrink-0 ms-3">
-                    −{sym}{Math.round(Math.abs(tx.amount)).toLocaleString('he-IL')}
+            recent.map((tx, i) => (
+              <div key={tx.id} className={cn(
+                'flex items-center justify-between px-5 py-3.5 hover:bg-surface-container-high/40 transition-colors',
+                i < recent.length - 1 && 'border-b border-outline-variant/6'
+              )}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold text-on-surface truncate">{tx.name}</div>
+                  <div className="text-[11px] text-on-surface-variant">
+                    {tx.category}
+                    {tx.date ? ` · ${tx.date}` : ''}
+                    {(tx as any).paymentMethod === 'credit' ? ' · אשראי' : (tx as any).paymentMethod === 'standing_order' ? ' · הוראת קבע' : ''}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="text-[14px] font-bold text-error flex-shrink-0 ms-3">
+                  −{sym}{Math.round(Math.abs(tx.amount)).toLocaleString('he-IL')}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
 
-      {/* AI Insight card */}
+      {/* AI tip */}
       {health < 70 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="glass-card p-7 rounded-[2rem] border border-primary/10 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden"
+          className="p-6 rounded-2xl border border-primary/10 bg-primary/4 flex items-center gap-5"
         >
-          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
-            <Lightbulb className="text-on-primary" size={24} fill="currentColor" />
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Lightbulb className="text-primary" size={22} />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-black text-primary mb-1.5">{t(lang, 'advisor')}</h3>
+            <h3 className="text-base font-black text-primary mb-1">{t(lang,'advisor')}</h3>
             <p className="text-on-surface text-sm leading-relaxed">
-              ציון הבריאות הפיננסית שלך הוא <strong>{health}/100</strong>. עבור ליועץ ה-AI לקבלת ניתוח מפורט והמלצות אישיות.
+              ציון הבריאות הפיננסית שלך הוא <strong>{health}/100</strong>. פתח את היועץ לקבל המלצות אישיות.
             </p>
           </div>
           <button
             onClick={() => setTab('advisor')}
-            className="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-bold rounded-xl transition-colors border border-primary/20 text-sm flex-shrink-0"
+            className="px-5 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-bold rounded-xl transition-colors border border-primary/20 text-sm flex-shrink-0"
           >
             פתח יועץ AI →
           </button>

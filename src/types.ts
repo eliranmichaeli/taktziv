@@ -43,6 +43,7 @@ export interface VariableExpense {
   paymentType?: 'one_time' | 'installments';
   installments?: number;
   cardId?: string;
+  paymentMethod?: 'cash' | 'credit' | 'standing_order';
 }
 
 export interface Income {
@@ -134,6 +135,11 @@ export interface AppSettings {
   incomeTypes: string[];
   goals: Record<string, number>;
   financialGoals?: FinancialGoals;
+  emergencyFunds?: {
+    personal?: number;
+    personal2?: number;
+    family?: number;
+  };
   onboardingDone?: boolean;
 }
 
