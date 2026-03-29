@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AppProvider, useApp } from './context/AppContext';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar, TopBar, MobileBottomNav } from './components/Navigation';
 import { Dashboard }   from './components/Dashboard';
 import { Expenses }    from './components/Expenses';
@@ -65,8 +64,7 @@ const Content: React.FC = () => {
 };
 
 const InnerApp: React.FC = () => {
-  // Fix: original bug — tab was missing from destructuring, causing "tab is not defined"
-  const { user, authReady, db, lang, tab } = useApp();
+  const { user, authReady, db, lang } = useApp();
   const rtl = isRTL(lang);
 
   if (!authReady) {
@@ -80,6 +78,10 @@ const InnerApp: React.FC = () => {
     );
   }
   if (!user) return <AuthScreen />;
+  // חסום גישה אם מייל לא אומת (Google מאומת אוטומטית)
+  if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+    return <AuthScreen />;
+  }
   if (!db.settings.onboardingDone) return <Onboarding />;
 
   return (
@@ -109,14 +111,10 @@ const InnerApp: React.FC = () => {
   );
 };
 
-// Fix: HIGH-04 — wrap everything in ErrorBoundary to prevent financial data
-// from leaking in unhandled React render errors.
 export default function App() {
   return (
-    <ErrorBoundary>
-      <AppProvider>
-        <InnerApp />
-      </AppProvider>
-    </ErrorBoundary>
+    <AppProvider>
+      <InnerApp />
+    </AppProvider>
   );
 }

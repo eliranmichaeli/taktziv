@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Mail, Lock, User, Eye, EyeOff, CheckCircle, RefreshCw } from 'lucide-react';
 import {
   authEmailSignIn, authEmailRegister, authGoogle, authForgot,
-  authUpdateProfile,
+  authUpdateProfile, authSendVerification, auth,
 } from '../../lib/firebase';
 import { LANGS } from '../../lib/i18n';
 import type { LangCode } from '../../types';
@@ -12,6 +12,7 @@ import { cn } from '../../lib/utils';
 const ERR_MAP: Record<string, string> = {
   'auth/user-not-found':       'לא נמצא משתמש עם כתובת דוא"ל זו',
   'auth/wrong-password':       'כתובת הדוא"ל או הסיסמה שגויים',
+  'auth/invalid-credential':   'כתובת הדוא"ל או הסיסמה שגויים',
   'auth/email-already-in-use': 'כתובת דוא"ל זו כבר רשומה — נסה להתחבר',
   'auth/weak-password':        'הסיסמה חלשה מדי — דרושים לפחות 6 תווים',
   'auth/too-many-requests':    'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
@@ -19,21 +20,32 @@ const ERR_MAP: Record<string, string> = {
   'auth/account-exists-with-different-credential': 'כתובת הדוא"ל רשומה עם שיטת כניסה אחרת',
 };
 
-interface AuthProps {
-  onSuccess?: () => void;
-}
+export const AuthScreen: React.FC = () => {
+  const [mode,        setMode]       = useState<'login' | 'register' | 'forgot'>('login');
+  const [email,       setEmail]      = useState('');
+  const [password,    setPassword]   = useState('');
+  const [fullName,    setFullName]   = useState('');
+  const [showPass,    setShowPass]   = useState(false);
+  const [consent,     setConsent]    = useState(false);
+  const [loading,     setLoading]    = useState(false);
+  const [error,       setError]      = useState('');
+  const [langCode,    setLangCode]   = useState<LangCode>('he');
+  const [forgotSent,  setForgotSent] = useState(false);
 
-export const AuthScreen: React.FC<AuthProps> = () => {
-  const [mode,       setMode]     = useState<'login' | 'register' | 'forgot'>('login');
-  const [email,      setEmail]    = useState('');
-  const [password,   setPassword] = useState('');
-  const [fullName,   setFullName] = useState('');
-  const [showPass,   setShowPass] = useState(false);
-  const [consent,    setConsent]  = useState(false);
-  const [loading,    setLoading]  = useState(false);
-  const [error,      setError]    = useState('');
-  const [langCode,   setLangCode] = useState<LangCode>('he');
-  const [forgotSent, setForgotSent] = useState(false);
+  // מצב אימות מייל
+  const [verifyMode,   setVerifyMode]   = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // טיימר לcooldown
+  const startCooldown = () => {
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -42,13 +54,45 @@ export const AuthScreen: React.FC<AuthProps> = () => {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await authEmailSignIn(email, password);
+        const cred = await authEmailSignIn(email, password);
+        // אם מייל לא אומת — הצג מסך אימות
+        if (!cred.user.emailVerified) {
+          setVerifyMode(true);
+          setLoading(false);
+          return;
+        }
       } else {
+        // הרשמה — שלח מייל אימות
         const cred = await authEmailRegister(email, password);
         if (fullName) await authUpdateProfile(cred.user, fullName);
+        await authSendVerification(cred.user);
+        setVerifyMode(true);
+        startCooldown();
       }
     } catch (e: any) {
       setError(ERR_MAP[e.code] || e.message || 'שגיאה לא ידועה');
+    }
+    setLoading(false);
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || !auth.currentUser) return;
+    setLoading(true);
+    try {
+      await authSendVerification(auth.currentUser);
+      startCooldown();
+    } catch (e: any) {
+      setError(ERR_MAP[e.code] || e.message);
+    }
+    setLoading(false);
+  };
+
+  const handleCheckVerified = async () => {
+    if (!auth.currentUser) return;
+    setLoading(true);
+    await auth.currentUser.reload();
+    if (!auth.currentUser.emailVerified) {
+      setError('המייל עדיין לא אומת — בדוק את תיבת הדוא"ל שלך');
     }
     setLoading(false);
   };
@@ -58,6 +102,7 @@ export const AuthScreen: React.FC<AuthProps> = () => {
     setLoading(true);
     try {
       await authGoogle();
+      // Google מאמת אוטומטית — אין צורך במסך אימות
     } catch (e: any) {
       setError(ERR_MAP[e.code] || e.message);
     }
@@ -76,6 +121,79 @@ export const AuthScreen: React.FC<AuthProps> = () => {
     setLoading(false);
   };
 
+  // ── מסך אימות מייל ────────────────────────────────
+  if (verifyMode) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center p-5">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm bg-surface-container-low rounded-2xl p-8 border border-outline-variant/10 shadow-2xl text-center"
+        >
+          {/* אייקון */}
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
+            <Mail className="text-primary" size={32} />
+          </div>
+
+          <h2 className="text-xl font-black text-on-surface mb-2">אמת את כתובת המייל שלך</h2>
+          <p className="text-sm text-on-surface-variant leading-relaxed mb-2">
+            שלחנו לינק אימות לכתובת:
+          </p>
+          <p className="text-sm font-bold text-primary mb-6 break-all">{email}</p>
+
+          <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 mb-6 text-right space-y-2">
+            <div className="flex items-start gap-2">
+              <CheckCircle size={15} className="text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-on-surface-variant">פתח את המייל שנשלח אליך</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle size={15} className="text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-on-surface-variant">לחץ על הקישור לאימות</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle size={15} className="text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-on-surface-variant">חזור לכאן ולחץ "כבר אימתתי"</p>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* כבר אימתתי */}
+          <button
+            onClick={handleCheckVerified}
+            disabled={loading}
+            className="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-60 hover:shadow-xl hover:shadow-primary/20 transition-all mb-3"
+          >
+            {loading ? '...' : '✓ כבר אימתתי — כנס לאפליקציה'}
+          </button>
+
+          {/* שלח שוב */}
+          <button
+            onClick={handleResend}
+            disabled={resendCooldown > 0 || loading}
+            className="w-full py-2.5 bg-surface-container-high text-on-surface-variant rounded-xl text-sm font-medium disabled:opacity-50 transition-all flex items-center justify-center gap-2 mb-4"
+          >
+            <RefreshCw size={14} />
+            {resendCooldown > 0 ? `שלח שוב בעוד ${resendCooldown} שניות` : 'שלח מייל אימות שוב'}
+          </button>
+
+          {/* חזרה */}
+          <button
+            onClick={() => { setVerifyMode(false); setError(''); setMode('login'); }}
+            className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+          >
+            חזרה למסך הכניסה
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── מסך כניסה/הרשמה רגיל ──────────────────────────
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-5">
       <motion.div
@@ -119,7 +237,7 @@ export const AuthScreen: React.FC<AuthProps> = () => {
             {(['login', 'register'] as const).map(m => (
               <button
                 key={m}
-                onClick={() => setMode(m)}
+                onClick={() => { setMode(m); setError(''); }}
                 className={cn(
                   'flex-1 py-2 rounded-lg text-sm font-semibold transition-all',
                   mode === m ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant'
@@ -152,7 +270,7 @@ export const AuthScreen: React.FC<AuthProps> = () => {
               <div className="relative">
                 <User className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input
-                  className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30 transition-all"
+                  className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
                   placeholder="שם מלא"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
@@ -163,7 +281,7 @@ export const AuthScreen: React.FC<AuthProps> = () => {
               <Mail className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
               <input
                 type="email"
-                className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30 transition-all"
+                className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
                 placeholder='כתובת דוא"ל'
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -175,10 +293,11 @@ export const AuthScreen: React.FC<AuthProps> = () => {
                 <Lock className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input
                   type={showPass ? 'text' : 'password'}
-                  className="w-full ps-10 pe-10 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30 transition-all"
+                  className="w-full ps-10 pe-10 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
                   placeholder="סיסמה (לפחות 6 תווים)"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   dir="ltr"
                 />
                 <button onClick={() => setShowPass(!showPass)} className="absolute end-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
