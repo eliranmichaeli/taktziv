@@ -3,6 +3,8 @@ export type AccountType = 'personal' | 'family_solo' | 'family';
 export type ScopeType   = 'personal' | 'personal2' | 'family';
 export type LangCode    = 'he' | 'en' | 'ru' | 'ar' | 'de' | 'fr';
 export type SyncStatus  = 'online' | 'syncing' | 'offline';
+export type ThemeMode   = 'light' | 'dark' | 'auto';
+export type PaymentMethod = 'cash' | 'credit' | 'standing_order';
 
 // ── Profile ──────────────────────────────────────────
 export interface UserProfile {
@@ -21,11 +23,15 @@ export interface FixedExpense {
   currency: string;
   category: string;
   type: ScopeType;
-  isStandingOrder?: boolean;
-  billingDay?: number | null;
-  cardId?: string;
   note?: string;
   tag?: string;
+  // תשלום
+  paymentMethod?: PaymentMethod;
+  cardId?: string;         // אם אשראי — איזה כרטיס
+  cardName?: string;       // שם הכרטיס לתצוגה
+  billingDay?: number;     // יום חיוב (אשראי / הוראת קבע)
+  isStandingOrder?: boolean;
+  standingOrderExpiry?: string; // תוקף הוראת קבע YYYY-MM-DD
 }
 
 export interface VariableExpense {
@@ -42,8 +48,13 @@ export interface VariableExpense {
   tag?: string;
   paymentType?: 'one_time' | 'installments';
   installments?: number;
+  // תשלום
+  paymentMethod?: PaymentMethod;
   cardId?: string;
-  paymentMethod?: 'cash' | 'credit' | 'standing_order';
+  cardName?: string;
+  billingDay?: number;
+  isStandingOrder?: boolean;
+  standingOrderExpiry?: string;
 }
 
 export interface Income {
@@ -64,6 +75,8 @@ export interface CreditCard {
   name: string;
   last4?: string;
   billingDay: number;
+  limit?: number;         // מסגרת אשראי (אופציונלי)
+  scope?: ScopeType;      // שיוך למשתמש
 }
 
 // ── Savings ──────────────────────────────────────────
@@ -89,6 +102,7 @@ export interface SavingsPlan {
 // ── Budget ───────────────────────────────────────────
 export interface Budget {
   personal: number;
+  personal2?: number;
   family: number;
   personalYearly?: number;
   familyYearly?: number;
@@ -140,36 +154,29 @@ export interface AppSettings {
     personal2?: number;
     family?: number;
   };
+  theme?: ThemeMode;
   onboardingDone?: boolean;
+  lastEmergencyAlert?: number; // timestamp של התראה אחרונה
 }
 
 // ── Full DB Structure ─────────────────────────────────
 export interface AppDB {
   settings: AppSettings;
   fixed: {
-    personal: FixedExpense[];
+    personal:  FixedExpense[];
     personal2: FixedExpense[];
-    family: FixedExpense[];
+    family:    FixedExpense[];
   };
-  variable: VariableExpense[];
-  incomes: Income[];
-  savings: SavingsPlan[];
+  variable:    VariableExpense[];
+  incomes:     Income[];
+  savings:     SavingsPlan[];
   creditCards: CreditCard[];
-  tasks: Record<string, { tasks: Task[]; goals: GoalItem[] }>;
+  tasks:       Record<string, { tasks: Task[]; goals: GoalItem[] }>;
   annualEvents?: AnnualEvent[];
 }
 
-export interface Task {
-  id: string;
-  text: string;
-  done: boolean;
-}
-
-export interface GoalItem {
-  id: string;
-  text: string;
-  done: boolean;
-}
+export interface Task     { id: string; text: string; done: boolean }
+export interface GoalItem { id: string; text: string; done: boolean }
 
 // ── UI State ─────────────────────────────────────────
 export type TabId =
@@ -178,10 +185,10 @@ export type TabId =
   | 'freedom' | 'income' | 'settings' | 'admin';
 
 export interface AppState {
-  tab: TabId;
+  tab:   TabId;
   month: number;
-  year: number;
-  lang: LangCode;
+  year:  number;
+  lang:  LangCode;
 }
 
 // ── AI Advisor ───────────────────────────────────────

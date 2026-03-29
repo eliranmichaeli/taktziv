@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Plus, Pencil, Trash2, Search, X, BrainCircuit } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../lib/i18n';
@@ -8,34 +8,72 @@ import { getCurrencySymbol, incTotal, totalInc, uid, today } from '../../lib/cal
 import type { Income, ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
 
+// קטגוריות ברירת מחדל — ניתן להרחיב
+const DEFAULT_INCOME_TYPES = [
+  'משכורת',
+  'עצמאי / פרילנס',
+  'נדל"ן',
+  'שוק ההון',
+  'פנסיה',
+  'קרן השתלמות',
+  'קצבת ביטוח לאומי',
+  'מזונות',
+  'ירושה / מתנה',
+  'החזר מס',
+  'בונוס',
+  'אחר',
+];
+
 // ── Add Income Modal ──────────────────────────────────
 const IncomeModal: React.FC<{
   existing?: Income;
   onClose: () => void;
 }> = ({ existing, onClose }) => {
   const { db, month, year, lang, updateDB } = useApp();
-  const sym   = getCurrencySymbol(db);
-  const types = db.settings.incomeTypes || ['משכורת'];
-  const p     = db.settings.profile;
+  const sym        = getCurrencySymbol(db);
+  const p          = db.settings.profile;
   const hasPartner = p.accountType === 'family' && !!p.partnerName;
   const isFamily   = p.accountType !== 'personal';
 
-  const [name,       setName]       = useState(existing?.name       || '');
-  const [amount,     setAmount]     = useState(String(existing?.amount || ''));
-  const [scope,      setScope]      = useState<ScopeType>(existing?.type || 'personal');
-  const [incomeType, setIncomeType] = useState(existing?.incomeType  || types[0]);
-  const [note,       setNote]       = useState(existing?.note        || '');
+  // מיזוג קטגוריות ברירת מחדל + מותאמות אישית
+  const customTypes  = db.settings.incomeTypes || [];
+  const allTypes     = Array.from(new Set([...DEFAULT_INCOME_TYPES, ...customTypes]));
+
+  const [name,        setName]        = useState(existing?.name       || '');
+  const [amount,      setAmount]      = useState(String(existing?.amount || ''));
+  const [scope,       setScope]       = useState<ScopeType>(existing?.type || 'personal');
+  const [incomeType,  setIncomeType]  = useState(existing?.incomeType  || allTypes[0]);
+  const [note,        setNote]        = useState(existing?.note        || '');
+  const [customType,  setCustomType]  = useState('');
+  const [showCustom,  setShowCustom]  = useState(false);
+  const [saving,      setSaving]      = useState(false);
+
+  const handleAddCustomType = async () => {
+    const trimmed = customType.trim();
+    if (!trimmed || allTypes.includes(trimmed)) return;
+    // שמור את הקטגוריה החדשה בהגדרות
+    await updateDB(d => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        incomeTypes: [...(d.settings.incomeTypes || []), trimmed],
+      },
+    }));
+    setIncomeType(trimmed);
+    setCustomType('');
+    setShowCustom(false);
+  };
 
   const handleSave = async () => {
     if (!name.trim() || !amount) return;
+    setSaving(true);
     const entry: Income = {
       id:         existing?.id || uid(),
       name:       name.trim(),
       amount:     parseFloat(amount),
       currency:   db.settings.currency,
       type:       scope,
-      month,
-      year,
+      month, year,
       incomeType,
       note,
     };
@@ -60,37 +98,93 @@ const IncomeModal: React.FC<{
         className="w-full md:max-w-md bg-surface rounded-t-[1.5rem] md:rounded-[1.5rem] p-6 border border-outline-variant/10 shadow-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold">{existing ? 'עריכת' : '+'} הכנסה</h2>
+          <h2 className="text-lg font-bold">{existing ? 'עריכת' : 'הוספת'} הכנסה</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
 
         <div className="space-y-4">
-          <input className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/30" placeholder="שם מקור ההכנסה" value={name} onChange={e => setName(e.target.value)} />
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-on-surface-variant font-medium block mb-1">סכום ({sym})</label>
-              <input type="number" inputMode="decimal" className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/30" placeholder="0" value={amount} onChange={e => setAmount(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-[10px] text-on-surface-variant font-medium block mb-1">סוג הכנסה</label>
-              <select className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/30" value={incomeType} onChange={e => setIncomeType(e.target.value)}>
-                {types.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+          {/* שם */}
+          <div>
+            <label className="text-xs font-medium text-on-surface-variant block mb-1.5">שם מקור ההכנסה</label>
+            <input
+              className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
+              placeholder="לדוגמה: משכורת ינואר"
+              value={name} onChange={e => setName(e.target.value)}
+            />
           </div>
 
+          {/* סכום */}
+          <div>
+            <label className="text-xs font-medium text-on-surface-variant block mb-1.5">סכום ({sym})</label>
+            <input
+              type="number" inputMode="decimal"
+              className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
+              placeholder="0" value={amount} onChange={e => setAmount(e.target.value)}
+            />
+          </div>
+
+          {/* סוג הכנסה */}
+          <div>
+            <label className="text-xs font-medium text-on-surface-variant block mb-1.5">סוג הכנסה</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {allTypes.map(type => (
+                <button key={type} type="button"
+                  onClick={() => { setIncomeType(type); setShowCustom(false); }}
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                    incomeType === type && !showCustom
+                      ? 'border-primary/40 bg-primary/10 text-primary'
+                      : 'border-outline-variant/20 text-on-surface-variant hover:border-outline-variant/40'
+                  )}>
+                  {type}
+                </button>
+              ))}
+              {/* הוספת קטגוריה חדשה */}
+              <button type="button"
+                onClick={() => setShowCustom(!showCustom)}
+                className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1',
+                  showCustom
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-dashed border-outline-variant/30 text-on-surface-variant hover:border-primary/30 hover:text-primary'
+                )}>
+                <Plus size={11} /> הוסף קטגוריה
+              </button>
+            </div>
+
+            {/* שדה קטגוריה חופשית */}
+            {showCustom && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                className="flex gap-2 mt-2"
+              >
+                <input
+                  className="flex-1 bg-surface-container-low border-0 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
+                  placeholder="שם הקטגוריה החדשה"
+                  value={customType}
+                  onChange={e => setCustomType(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddCustomType()}
+                />
+                <button onClick={handleAddCustomType}
+                  className="px-4 py-2.5 bg-primary text-on-primary rounded-xl text-xs font-bold hover:opacity-90">
+                  הוסף
+                </button>
+              </motion.div>
+            )}
+          </div>
+
+          {/* שיוך */}
           {(hasPartner || isFamily) && (
             <div>
-              <label className="text-[10px] text-on-surface-variant font-medium block mb-1.5">שיוך</label>
+              <label className="text-xs font-medium text-on-surface-variant block mb-1.5">שיוך לחשבון</label>
               <div className="flex gap-2">
                 {[
                   { id: 'personal'  as ScopeType, label: p.name || 'אישי' },
                   ...(hasPartner ? [{ id: 'personal2' as ScopeType, label: p.partnerName || 'משתמש 2' }] : []),
                   ...(isFamily   ? [{ id: 'family'    as ScopeType, label: 'משפחה' }] : []),
                 ].map(s => (
-                  <button key={s.id} onClick={() => setScope(s.id)}
-                    className={cn('flex-1 py-2 rounded-xl text-xs font-medium border transition-all', scope === s.id ? 'border-primary/40 bg-primary/10 text-primary' : 'border-outline-variant/15 text-on-surface-variant')}>
+                  <button key={s.id} type="button" onClick={() => setScope(s.id)}
+                    className={cn('flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all',
+                      scope === s.id ? 'border-primary/40 bg-primary/10 text-primary' : 'border-outline-variant/15 text-on-surface-variant hover:border-outline-variant/30'
+                    )}>
                     {s.label}
                   </button>
                 ))}
@@ -98,16 +192,24 @@ const IncomeModal: React.FC<{
             </div>
           )}
 
+          {/* הערה */}
           <div>
-            <label className="text-[10px] text-on-surface-variant font-medium block mb-1">הערה (אופציונלי)</label>
-            <input className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/30" placeholder="" value={note} onChange={e => setNote(e.target.value)} />
+            <label className="text-xs font-medium text-on-surface-variant block mb-1.5">הערה (אופציונלי)</label>
+            <input
+              className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
+              placeholder="לדוגמה: בונוס שנתי"
+              value={note} onChange={e => setNote(e.target.value)}
+            />
           </div>
         </div>
 
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high rounded-xl text-sm font-medium">{t(lang, 'cancel')}</button>
-          <button onClick={handleSave} disabled={!name.trim() || !amount} className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
-            {t(lang, 'save')}
+          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">
+            {t(lang, 'cancel')}
+          </button>
+          <button onClick={handleSave} disabled={saving || !name.trim() || !amount}
+            className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
+            {saving ? '...' : t(lang, 'save')}
           </button>
         </div>
       </motion.div>
@@ -118,8 +220,8 @@ const IncomeModal: React.FC<{
 // ── Main Incomes ──────────────────────────────────────
 export const Incomes: React.FC = () => {
   const { db, month, year, lang, updateDB } = useApp();
-  const sym = getCurrencySymbol(db);
-  const p   = db.settings.profile;
+  const sym        = getCurrencySymbol(db);
+  const p          = db.settings.profile;
   const hasPartner = p.accountType === 'family' && !!p.partnerName;
   const isFamily   = p.accountType !== 'personal';
 
@@ -135,16 +237,9 @@ export const Incomes: React.FC = () => {
   const totalF   = incTotal(db, 'family',    month, year);
 
   const deleteIncome = (id: string) => {
-    if (!confirm('למחוק הכנסה?')) return;
+    if (!confirm('למחוק הכנסה זו?')) return;
     updateDB(d => ({ ...d, incomes: d.incomes.filter(i => i.id !== id) }));
   };
-
-  // Pie data
-  const pieData = [
-    { name: p.name || 'אישי', value: totalP,  color: '#4edea3' },
-    ...(hasPartner ? [{ name: p.partnerName || 'משתמש 2', value: totalP2, color: '#c0c1ff' }] : []),
-    ...(isFamily   ? [{ name: 'משפחה', value: totalF, color: '#f6ad55' }] : []),
-  ].filter(d => d.value > 0);
 
   const scopeLabel = (type: ScopeType): string => {
     if (type === 'personal')  return p.name || 'אישי';
@@ -152,18 +247,22 @@ export const Incomes: React.FC = () => {
     return 'משפחה';
   };
 
+  const pieData = [
+    { name: p.name || 'אישי', value: totalP,  color: '#4edea3' },
+    ...(hasPartner ? [{ name: p.partnerName || 'משתמש 2', value: totalP2, color: '#c0c1ff' }] : []),
+    ...(isFamily   ? [{ name: 'משפחה', value: totalF, color: '#f6ad55' }] : []),
+  ].filter(d => d.value > 0);
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold font-headline">{t(lang, 'income')}</h1>
-          <p className="text-sm text-on-surface-variant mt-1">מעקב וניתוח זרימת כספים חודשית</p>
+          <p className="text-sm text-on-surface-variant mt-1">מעקב וניתוח הכנסות חודשיות</p>
         </div>
-        <button
-          onClick={() => setModal({})}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all"
-        >
+        <button onClick={() => setModal({})}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all">
           <Plus size={16} /> הכנסה חדשה
         </button>
       </div>
@@ -176,7 +275,7 @@ export const Incomes: React.FC = () => {
           ...(hasPartner ? [{ label: p.partnerName || 'משתמש 2', val: totalP2 }] : []),
           ...(isFamily   ? [{ label: 'הכנסה משפחתית', val: totalF }] : []),
         ].slice(0, 3).map((s, i) => (
-          <div key={i} className={cn('rounded-2xl p-5 border border-outline-variant/5 relative overflow-hidden group', s.accent ? 'bg-primary/6' : 'bg-surface-container-low')}>
+          <div key={i} className={cn('rounded-2xl p-5 border border-outline-variant/5', s.accent ? 'bg-primary/6' : 'bg-surface-container-low')}>
             <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">{s.label}</div>
             <div className={cn('text-2xl font-black font-headline', s.accent ? 'text-primary' : 'text-on-surface')}>
               {sym}{Math.round(s.val).toLocaleString('he-IL')}
@@ -185,19 +284,15 @@ export const Incomes: React.FC = () => {
         ))}
       </div>
 
-      {/* Table */}
+      {/* רשימה */}
       <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5 overflow-hidden">
         <div className="px-6 py-4 border-b border-outline-variant/8 flex items-center justify-between gap-4 flex-wrap">
-          <h3 className="font-bold text-base">רשימת הכנסות — חודש {month + 1}/{year}</h3>
-          <div className="relative">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={15} />
-            <input
-              className="bg-surface-container-high border-0 rounded-xl ps-9 pe-4 py-2 text-sm focus:ring-1 focus:ring-primary w-52 text-on-surface"
-              placeholder="חיפוש..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
+          <h3 className="font-bold text-base">הכנסות — {month + 1}/{year}</h3>
+          <input
+            className="bg-surface-container-high border-0 rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-primary w-52 text-on-surface"
+            placeholder="חיפוש..."
+            value={search} onChange={e => setSearch(e.target.value)}
+          />
         </div>
 
         {filtered.length === 0 ? (
@@ -212,28 +307,23 @@ export const Incomes: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm text-on-surface">{income.name}</div>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className={cn(
-                      'text-[10px] font-bold px-2 py-0.5 rounded-full',
+                    <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
                       income.type === 'personal'  ? 'bg-primary/10 text-primary' :
                       income.type === 'personal2' ? 'bg-secondary/10 text-secondary' :
                                                     'bg-tertiary/10 text-tertiary'
                     )}>
                       {scopeLabel(income.type)}
                     </span>
-                    {income.incomeType && (
-                      <span className="text-xs text-on-surface-variant">{income.incomeType}</span>
-                    )}
-                    {income.note && (
-                      <span className="text-xs text-on-surface-variant italic">{income.note}</span>
-                    )}
+                    {income.incomeType && <span className="text-xs text-on-surface-variant">{income.incomeType}</span>}
+                    {income.note && <span className="text-xs text-on-surface-variant italic">{income.note}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0 ms-4">
                   <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                    <button onClick={() => setModal({ income })} className="p-1.5 rounded-lg hover:bg-primary/10 hover:text-primary text-on-surface-variant transition-colors">
+                    <button onClick={() => setModal({ income })} className="p-1.5 rounded-lg hover:bg-primary/10 hover:text-primary text-on-surface-variant">
                       <Pencil size={13} />
                     </button>
-                    <button onClick={() => deleteIncome(income.id)} className="p-1.5 rounded-lg hover:bg-error/10 hover:text-error text-on-surface-variant transition-colors">
+                    <button onClick={() => deleteIncome(income.id)} className="p-1.5 rounded-lg hover:bg-error/10 hover:text-error text-on-surface-variant">
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -246,13 +336,13 @@ export const Incomes: React.FC = () => {
           </div>
         )}
 
-        {/* Footer totals */}
+        {/* סיכום */}
         <div className="px-6 py-4 bg-surface-container-high/20 border-t border-outline-variant/8 flex flex-wrap gap-6 justify-end">
           {[
-            { label: 'אישי',    val: totalP,  show: true },
-            { label: hasPartner ? p.partnerName || 'משתמש 2' : '', val: totalP2, show: hasPartner },
-            { label: 'משפחה',  val: totalF,  show: isFamily },
-            { label: 'סה"כ',   val: totalAll, show: true, bold: true },
+            { label: p.name || 'אישי', val: totalP, show: true },
+            { label: p.partnerName || 'משתמש 2', val: totalP2, show: hasPartner },
+            { label: 'משפחה', val: totalF, show: isFamily },
+            { label: 'סה"כ', val: totalAll, show: true, bold: true },
           ].filter(r => r.show).map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-on-surface-variant text-sm">{r.label}:</span>
@@ -264,7 +354,7 @@ export const Incomes: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom: pie chart + AI insight */}
+      {/* גרף עוגה */}
       {pieData.length > 1 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5">
@@ -290,14 +380,13 @@ export const Incomes: React.FC = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5 flex items-center gap-5">
             <div className="flex-1">
               <h4 className="font-bold text-sm mb-2">תובנת AI</h4>
               <p className="text-on-surface-variant text-xs leading-relaxed">
-                סיכום ההכנסות לחודש זה: <strong className="text-primary">{sym}{Math.round(totalAll).toLocaleString('he-IL')}</strong>.
-                {totalP > 0 && totalF > 0 && ` יחס אישי/משפחה: ${Math.round(totalP/totalAll*100)}% / ${Math.round(totalF/totalAll*100)}%.`}
-                {' '}לניתוח מעמיק עבור ליועץ ה-AI.
+                סה"כ הכנסות החודש: <strong className="text-primary">{sym}{Math.round(totalAll).toLocaleString('he-IL')}</strong>.
+                {totalP > 0 && totalF > 0 && ` יחס אישי/משפחה: ${Math.round(totalP/totalAll*100)}%/${Math.round(totalF/totalAll*100)}%.`}
+                {' '}לניתוח מעמיק — עבור ליועץ ה-AI.
               </p>
             </div>
             <div className="w-14 h-14 bg-surface-container-high rounded-xl flex items-center justify-center border border-primary/15 flex-shrink-0">
@@ -310,10 +399,7 @@ export const Incomes: React.FC = () => {
       {/* Modal */}
       <AnimatePresence>
         {modal !== null && (
-          <IncomeModal
-            existing={modal.income}
-            onClose={() => setModal(null)}
-          />
+          <IncomeModal existing={modal.income} onClose={() => setModal(null)} />
         )}
       </AnimatePresence>
     </div>
