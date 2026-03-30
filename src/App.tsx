@@ -13,6 +13,7 @@ import { Freedom }     from './components/Freedom';
 import { Settings }    from './components/Settings';
 import { AuthScreen }  from './components/Auth';
 import { Onboarding }  from './components/Onboarding';
+import { Admin }       from './components/Admin';
 import { isRTL }       from './lib/i18n';
 import { cn }          from './lib/utils';
 
@@ -59,6 +60,7 @@ const Content: React.FC = () => {
     case 'advisor':    return <Advisor />;
     case 'freedom':    return <Freedom />;
     case 'settings':   return <Settings />;
+    case 'admin':     return <Admin />;
     default:           return <Dashboard />;
   }
 };
@@ -78,10 +80,6 @@ const InnerApp: React.FC = () => {
     );
   }
   if (!user) return <AuthScreen />;
-  // חסום גישה אם מייל לא אומת (Google מאומת אוטומטית)
-  if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-    return <AuthScreen />;
-  }
   if (!db.settings.onboardingDone) return <Onboarding />;
 
   return (

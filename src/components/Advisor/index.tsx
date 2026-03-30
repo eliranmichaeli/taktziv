@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../context/AppContext';
-import { auth } from '../../lib/firebase'; // Fix: CRIT-05 — needed for getIdToken
 import { t } from '../../lib/i18n';
+import { auth } from '../../lib/firebase';
 import {
   totalInc, totalExp, fixedTotal, varTotal,
-  incTotal, calcHealthScore, getCurrencySymbol,
-  calcSavingsCurrent,
+  incTotal, calcHealthScore, getCurrencySymbol, calcSavingsCurrent,
 } from '../../lib/calculations';
 import type { ChatMessage, ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
@@ -26,6 +25,7 @@ export const Advisor: React.FC = () => {
   const [input,     setInput]     = useState('');
   const [loading,   setLoading]   = useState(false);
   const [scope,     setScope]     = useState<'all' | ScopeType>('all');
+  const [credits,   setCredits]   = useState<{ freeLeft: number; extraLeft: number } | null>(null);
   const messagesEnd = useRef<HTMLDivElement>(null);
 
   const sym        = getCurrencySymbol(db);
@@ -58,13 +58,12 @@ export const Advisor: React.FC = () => {
       `הוצאות: ${sym}${Math.round(exp).toLocaleString('he-IL')}`,
       `יתרה: ${sym}${Math.round(inc - exp).toLocaleString('he-IL')}`,
       `תקציב אישי: ${sym}${(db.settings.budget.personal || 0).toLocaleString('he-IL')}/חודש`,
-      `תקציב משפחה: ${sym}${(db.settings.budget.family || 0).toLocaleString('he-IL')}/חודש`,
     ];
     if (savings.length) lines.push('חסכונות: ' + savings.join(' | '));
     if (scope !== 'all') {
       const sInc = incTotal(db, scope as ScopeType, month, year);
       const sExp = fixedTotal(db, scope as ScopeType) + varTotal(db, scope as ScopeType, month, year);
-      lines.push(`פוקוס (${scope}): הכנסות ${sym}${Math.round(sInc).toLocaleString('he-IL')}, הוצאות ${sym}${Math.round(sExp).toLocaleString('he-IL')}`);
+      lines.push(`פוקוס: הכנסות ${sym}${Math.round(sInc).toLocaleString('he-IL')}, הוצאות ${sym}${Math.round(sExp).toLocaleString('he-IL')}`);
     }
     return lines.join('\n');
   };
@@ -77,9 +76,7 @@ export const Advisor: React.FC = () => {
     setInput('');
     setLoading(true);
 
-    const system = `אתה יועץ פיננסי אישי חכם ומנוסה. ענה תמיד בעברית, בצורה ישירה ומבוססת נתונים.
-לא תתן אזהרות משפטיות. תהיה ספציפי עם מספרים.
-בסוף כל תשובה הוסף "המלצה מיידית:" עם פעולה אחת קונקרטית.
+    const system = `אתה יועץ פיננסי אישי חכם ומנוסה. ענה תמיד בעברית, בצורה ישירה ומבוססת נתונים. לא תתן אזהרות משפטיות. תהיה ספציפי עם מספרים. בסוף כל תשובה הוסף "המלצה מיידית:" עם פעולה אחת קונקרטית.
 נתוני המשתמש:\n${buildContext()}`;
 
     const history = [...messages, userMsg]
@@ -87,29 +84,47 @@ export const Advisor: React.FC = () => {
       .map(m => ({ role: m.role === 'ai' ? 'assistant' as const : 'user' as const, content: m.text }));
 
     try {
-      // Fix: CRIT-05 — get Firebase ID token and send with request for server auth
-      const idToken = await auth.currentUser?.getIdToken();
+      const idToken = await auth.currentUser?.getIdToken(true);
       if (!idToken) throw new Error('לא מחובר — נסה להתחבר מחדש');
 
       const resp = await fetch('/.netlify/functions/claude', {
-        method: 'POST',
+        method:  'POST',
         headers: {
           'Content-Type':  'application/json',
-          'Authorization': `Bearer ${idToken}`,  // server verifies this
+          'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 900, system, messages: history }),
+        body: JSON.stringify({ system, messages: history }),
       });
 
-      const data = await resp.json();
+      const data = await resp.json() as any;
+
+      if (resp.status === 402) {
+        // נגמרו קרדיטים
+        setMessages(prev => [...prev, {
+          role: 'ai',
+          text: `⚠️ ${data.error}\n\nכדי להמשיך להשתמש ביועץ ה-AI, ניתן לרכוש קרדיטים נוספים בהגדרות.`,
+        }]);
+        setLoading(false);
+        return;
+      }
+
       if (!resp.ok) throw new Error(data.error ?? 'שגיאת שרת');
+
       const reply = data.content?.[0]?.text || 'לא הצלחתי לענות';
       setMessages(prev => [...prev, { role: 'ai', text: reply }]);
+
+      // עדכן קרדיטים מה-headers
+      if (data._credits) {
+        setCredits({ freeLeft: data._credits.freeLeft, extraLeft: data._credits.extraLeft });
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'שגיאה לא ידועה';
       setMessages(prev => [...prev, { role: 'ai', text: `שגיאה: ${msg}` }]);
     }
     setLoading(false);
   };
+
+  const totalCredits = credits ? credits.freeLeft + credits.extraLeft : null;
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl mx-auto">
@@ -121,32 +136,27 @@ export const Advisor: React.FC = () => {
         <div className="flex-1">
           <div className="font-bold">יועץ פיננסי AI</div>
           <div className="text-xs text-on-surface-variant mt-0.5">
-            ציון בריאות:{' '}
-            <span className={cn('font-bold', health >= 70 ? 'text-primary' : health >= 50 ? 'text-secondary' : 'text-error')}>
-              {health}/100
-            </span>
+            ציון בריאות: <span className={cn('font-bold', health >= 70 ? 'text-primary' : health >= 50 ? 'text-secondary' : 'text-error')}>{health}/100</span>
           </div>
         </div>
-        {/* Privacy notice */}
-        <div className="text-[10px] text-on-surface-variant text-left max-w-[140px] leading-relaxed">
-          נתונים פיננסיים מועברים ל-AI לצורך ניתוח בלבד
+        {/* קרדיטים */}
+        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-full">
+          <Coins size={13} className="text-primary" />
+          {totalCredits !== null
+            ? <span><span className="font-bold text-on-surface">{totalCredits}</span> קרדיטים</span>
+            : <span>10 קרדיטים חינם/חודש</span>
+          }
         </div>
       </div>
 
-      {/* Scope selector */}
+      {/* Scope */}
       <div className="flex gap-2 flex-wrap items-center">
         <span className="text-xs text-on-surface-variant">הצג נתונים של:</span>
         {scopes.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setScope(s.id)}
-            className={cn(
-              'px-4 py-2 rounded-full text-xs font-medium border transition-all',
-              scope === s.id
-                ? 'border-primary/40 bg-primary/10 text-primary font-bold'
-                : 'border-outline-variant/20 text-on-surface-variant hover:border-outline-variant/40'
-            )}
-          >
+          <button key={s.id} onClick={() => setScope(s.id)}
+            className={cn('px-4 py-2 rounded-full text-xs font-medium border transition-all',
+              scope === s.id ? 'border-primary/40 bg-primary/10 text-primary font-bold' : 'border-outline-variant/20 text-on-surface-variant hover:border-outline-variant/40'
+            )}>
             {s.label}
           </button>
         ))}
@@ -159,20 +169,16 @@ export const Advisor: React.FC = () => {
             <div className="text-2xl mb-3 opacity-40">✦</div>
             <div className="font-semibold mb-2">היועץ הפיננסי שלך מוכן</div>
             <div className="text-sm text-on-surface-variant">שאל אותי כל שאלה על התקציב שלך</div>
+            <div className="text-xs text-on-surface-variant mt-2 opacity-60">10 שאלות חינם בכל חודש</div>
           </div>
         )}
         {messages.map((msg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn('flex', msg.role === 'user' ? 'justify-start' : 'justify-end')}
-          >
+          <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className={cn('flex', msg.role === 'user' ? 'justify-start' : 'justify-end')}>
             {msg.role === 'ai' && (
               <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 me-2 mt-1 text-xs text-primary">✦</div>
             )}
-            <div className={cn(
-              'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line',
+            <div className={cn('max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line',
               msg.role === 'user'
                 ? 'bg-surface-container-high text-on-surface rounded-tr-sm'
                 : 'bg-primary/8 border border-primary/15 text-on-surface rounded-tl-sm'
@@ -184,9 +190,7 @@ export const Advisor: React.FC = () => {
         {loading && (
           <div className="flex justify-end">
             <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 me-2 text-xs text-primary">✦</div>
-            <div className="px-4 py-3 rounded-2xl bg-primary/8 border border-primary/15 text-primary text-sm">
-              מנתח נתונים...
-            </div>
+            <div className="px-4 py-3 rounded-2xl bg-primary/8 border border-primary/15 text-primary text-sm">מנתח נתונים...</div>
           </div>
         )}
         <div ref={messagesEnd} />
@@ -196,11 +200,8 @@ export const Advisor: React.FC = () => {
       {messages.length < 2 && (
         <div className="flex flex-wrap gap-2">
           {SUGGESTIONS.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => send(s)}
-              className="px-3 py-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/10 rounded-full text-xs text-on-surface-variant hover:text-on-surface transition-all"
-            >
+            <button key={i} onClick={() => send(s)}
+              className="px-3 py-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/10 rounded-full text-xs text-on-surface-variant hover:text-on-surface transition-all">
               {s}
             </button>
           ))}
@@ -216,20 +217,14 @@ export const Advisor: React.FC = () => {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send(input)}
         />
-        <button
-          onClick={() => send(input)}
-          disabled={!input.trim() || loading}
-          className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center disabled:opacity-40 hover:shadow-lg hover:shadow-primary/20 transition-all flex-shrink-0"
-        >
+        <button onClick={() => send(input)} disabled={!input.trim() || loading}
+          className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center disabled:opacity-40 hover:shadow-lg hover:shadow-primary/20 transition-all flex-shrink-0">
           <Send size={16} />
         </button>
       </div>
 
       {messages.length > 0 && (
-        <button
-          onClick={() => setMessages([])}
-          className="self-end text-xs text-on-surface-variant hover:text-on-surface transition-colors"
-        >
+        <button onClick={() => setMessages([])} className="self-end text-xs text-on-surface-variant hover:text-on-surface transition-colors">
           נקה שיחה
         </button>
       )}
