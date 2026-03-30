@@ -14,7 +14,7 @@ import { MONTHS_HE } from '../../lib/calculations';
 
 // ── Sidebar ───────────────────────────────────────────
 export const Sidebar: React.FC = () => {
-  const { tab, setTab, lang, db } = useApp();
+  const { tab, setTab, lang, db, user } = useApp();
   const p          = db.settings.profile;
   const isFamily   = p.accountType !== 'personal';
   const hasPartner = p.accountType === 'family' && !!p.partnerName;
