@@ -33,7 +33,14 @@ export const Sidebar: React.FC = () => {
     { id: 'advisor',   label: t(lang, 'advisor'),  icon: Bot },
     { id: 'freedom',   label: t(lang, 'freedom'),  icon: Star },
     { id: 'settings',  label: t(lang, 'settings'), icon: Settings },
+    ...(user?.email === 'eliran1456@gmail.com' ? [{ id: 'admin' as TabId, label: 'ניהול', icon: ShieldCheck }] : []),
   ];
+
+  // Admin — רק למנהל
+  const ADMIN_EMAIL = 'eliran1456@gmail.com';
+  if (db && (db as any)._adminEmail === ADMIN_EMAIL || true) {
+    // נטפל בזה ב-useApp
+  }
 
   return (
     <aside className={cn(
