@@ -82,15 +82,15 @@ export const useApp = (): AppContextValue => {
 // ── Theme helper ──────────────────────────────────────
 const applyTheme = (theme: ThemeMode) => {
   const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else if (theme === 'light') {
-    root.classList.remove('dark');
+  if (theme === 'light') {
+    root.classList.add('light');
+  } else if (theme === 'dark') {
+    root.classList.remove('light');
   } else {
-    // auto — לפי שעות היום: 20:00–07:00 = לילה
+    // auto — לפי שעות היום: 20:00–07:00 = לילה (כהה), 07:00–20:00 = יום (בהיר)
     const hour = new Date().getHours();
-    const isDark = hour >= 20 || hour < 7;
-    root.classList.toggle('dark', isDark);
+    const isDay = hour >= 7 && hour < 20;
+    root.classList.toggle('light', isDay);
   }
 };
 
