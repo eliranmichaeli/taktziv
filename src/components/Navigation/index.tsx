@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   LayoutDashboard, Receipt, Wallet, TrendingUp, Bot,
   Settings, LogOut, User, ChevronDown, Globe,
-  PiggyBank, Calendar, Star, Sun, Moon, Monitor,
+  PiggyBank, Calendar, Star, Sun, Moon, Monitor, ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../context/AppContext';
