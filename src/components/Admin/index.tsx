@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, Plus, Trash2, Coins, RefreshCw, AlertTriangle } from 'lucide-react';
-import { motion } from 'motion/react';
+import {
+  collection, getDocs, doc, setDoc, updateDoc, increment, getDoc,
+} from 'firebase/firestore';
 import { useApp } from '../../context/AppContext';
-import { auth } from '../../lib/firebase';
+import { db as firestoreDB } from '../../lib/firebase';
 import { cn } from '../../lib/utils';
 
 const ADMIN_EMAIL = 'eliran1456@gmail.com';
-
-interface AdminUser {
-  uid:       string;
-  email:     string;
-  isAdmin:   boolean;
-  credits:   number;
-  createdAt: string;
-}
 
 // ── Admin Guard ───────────────────────────────────────
 const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -33,83 +27,99 @@ const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ── Main Admin ────────────────────────────────────────
+interface UserRecord {
+  uid: string; email: string; freeLeft: number; extra: number; isAdmin: boolean;
+}
+
 const AdminContent: React.FC = () => {
-  const { user } = useApp();
-  const [users,      setUsers]      = useState<AdminUser[]>([]);
-  const [admins,     setAdmins]     = useState<string[]>([ADMIN_EMAIL]);
-  const [loading,    setLoading]    = useState(true);
-  const [newAdmin,   setNewAdmin]   = useState('');
-  const [creditUid,  setCreditUid]  = useState('');
-  const [creditAmt,  setCreditAmt]  = useState('10');
-  const [error,      setError]      = useState('');
-  const [success,    setSuccess]    = useState('');
-  const [activeTab,  setActiveTab]  = useState<'users' | 'admins' | 'credits'>('users');
+  const [users,     setUsers]     = useState<UserRecord[]>([]);
+  const [admins,    setAdmins]    = useState<string[]>([ADMIN_EMAIL]);
+  const [loading,   setLoading]   = useState(true);
+  const [newAdmin,  setNewAdmin]  = useState('');
+  const [creditUid, setCreditUid] = useState('');
+  const [creditAmt, setCreditAmt] = useState('10');
+  const [error,     setError]     = useState('');
+  const [success,   setSuccess]   = useState('');
+  const [activeTab, setActiveTab] = useState<'users'|'admins'|'credits'>('users');
 
-  const getAuthHeaders = async () => {
-    const token = await auth.currentUser?.getIdToken(true);
-    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-  };
-
-  const loadUsers = async () => {
-    setLoading(true);
-    setError('');
+  const loadData = async () => {
+    setLoading(true); setError('');
     try {
-      const headers = await getAuthHeaders();
-      const res     = await fetch('/.netlify/functions/admin?action=list_users', { headers });
-      if (!res.ok) throw new Error('שגיאה בטעינת משתמשים');
-      const data = await res.json() as { users: AdminUser[] };
-      setUsers(data.users || []);
+      // קרא כל מסמכי credits
+      const snap = await getDocs(collection(firestoreDB, 'credits'));
+      const now  = new Date();
+      const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const list: UserRecord[] = snap.docs.map(d => {
+        const data = d.data();
+        const used = data.month === curM ? (data.used || 0) : 0;
+        return {
+          uid:      d.id,
+          email:    data.email || d.id,
+          freeLeft: Math.max(0, 10 - used),
+          extra:    data.extra || 0,
+          isAdmin:  data.email === ADMIN_EMAIL,
+        };
+      });
+      setUsers(list);
+
+      // קרא מנהלים
+      const adminSnap = await getDocs(collection(firestoreDB, 'admins'));
+      const adminList = [ADMIN_EMAIL, ...adminSnap.docs.map(d => d.data().email).filter(Boolean)];
+      setAdmins([...new Set(adminList)]);
     } catch (e: any) {
-      setError(e.message);
+      setError('שגיאה בטעינת נתונים: ' + e.message);
     }
     setLoading(false);
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadData(); }, []);
+
+  const flash = (msg: string, isError = false) => {
+    if (isError) { setError(msg); setTimeout(() => setError(''), 4000); }
+    else { setSuccess(msg); setTimeout(() => setSuccess(''), 4000); }
+  };
 
   const addAdmin = async () => {
-    if (!newAdmin.trim()) return;
-    setError(''); setSuccess('');
+    const email = newAdmin.trim();
+    if (!email) return;
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch('/.netlify/functions/admin', {
-        method: 'POST', headers,
-        body: JSON.stringify({ action: 'add_admin', email: newAdmin.trim() }),
+      await setDoc(doc(firestoreDB, 'admins', email.replace('@','_at_').replace('.','_dot_')), {
+        email, addedAt: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error('שגיאה בהוספת מנהל');
-      setAdmins(prev => [...prev, newAdmin.trim()]);
+      setAdmins(prev => [...new Set([...prev, email])]);
       setNewAdmin('');
-      setSuccess(`${newAdmin} נוסף כמנהל בהצלחה`);
-    } catch (e: any) { setError(e.message); }
+      flash(`${email} נוסף כמנהל`);
+    } catch (e: any) { flash('שגיאה: ' + e.message, true); }
   };
 
   const removeAdmin = async (email: string) => {
-    if (email === ADMIN_EMAIL) { setError('לא ניתן להסיר את מנהל הראשי'); return; }
-    if (!confirm(`להסיר את ${email} מרשימת המנהלים?`)) return;
+    if (email === ADMIN_EMAIL) { flash('לא ניתן להסיר את מנהל הראשי', true); return; }
+    if (!confirm(`להסיר את ${email}?`)) return;
     setAdmins(prev => prev.filter(a => a !== email));
-    setSuccess(`${email} הוסר מרשימת המנהלים`);
+    flash(`${email} הוסר`);
   };
 
   const addCredits = async () => {
-    if (!creditUid.trim() || !creditAmt) return;
-    setError(''); setSuccess('');
+    const amt = parseInt(creditAmt);
+    if (!creditUid.trim() || !amt) return;
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch('/.netlify/functions/admin', {
-        method: 'POST', headers,
-        body: JSON.stringify({ action: 'add_credits', uid: creditUid.trim(), amount: parseInt(creditAmt) }),
-      });
-      if (!res.ok) throw new Error('שגיאה בהוספת קרדיטים');
-      setSuccess(`${creditAmt} קרדיטים נוספו בהצלחה`);
+      const ref  = doc(firestoreDB, 'credits', creditUid.trim());
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        await updateDoc(ref, { extra: increment(amt) });
+      } else {
+        await setDoc(ref, { extra: amt, used: 0, month: '' });
+      }
+      flash(`${amt} קרדיטים נוספו בהצלחה`);
       setCreditUid('');
-      loadUsers();
-    } catch (e: any) { setError(e.message); }
+      loadData();
+    } catch (e: any) { flash('שגיאה: ' + e.message, true); }
   };
 
   const tabs = [
-    { id: 'users'   as const, label: 'משתמשים',  icon: Users },
-    { id: 'admins'  as const, label: 'מנהלים',   icon: Shield },
-    { id: 'credits' as const, label: 'קרדיטים',  icon: Coins },
+    { id: 'users'   as const, label: 'משתמשים', icon: Users  },
+    { id: 'admins'  as const, label: 'מנהלים',  icon: Shield },
+    { id: 'credits' as const, label: 'קרדיטים', icon: Coins  },
   ];
 
   return (
@@ -123,12 +133,11 @@ const AdminContent: React.FC = () => {
           <h1 className="text-xl font-bold">פאנל ניהול</h1>
           <p className="text-xs text-on-surface-variant">גישה מוגבלת למנהלים בלבד</p>
         </div>
-        <button onClick={loadUsers} className="ms-auto p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors">
+        <button onClick={loadData} className="ms-auto p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      {/* Alerts */}
       {error   && <div className="p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm">{error}</div>}
       {success && <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl text-primary text-sm">✓ {success}</div>}
 
@@ -137,15 +146,14 @@ const AdminContent: React.FC = () => {
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={cn('flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all',
-              activeTab === tab.id ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+              activeTab === tab.id ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant'
             )}>
-            <tab.icon size={15} />
-            {tab.label}
+            <tab.icon size={15} />{tab.label}
           </button>
         ))}
       </div>
 
-      {/* Users tab */}
+      {/* Users */}
       {activeTab === 'users' && (
         <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5 overflow-hidden">
           <div className="px-6 py-4 border-b border-outline-variant/8 flex items-center justify-between">
@@ -155,29 +163,28 @@ const AdminContent: React.FC = () => {
           {loading ? (
             <div className="text-center py-10 text-on-surface-variant text-sm">טוען...</div>
           ) : users.length === 0 ? (
-            <div className="text-center py-10 text-on-surface-variant text-sm">אין נתוני משתמשים זמינים</div>
+            <div className="text-center py-10 text-on-surface-variant text-sm">
+              <div className="mb-2 opacity-40 text-2xl">◎</div>
+              אין נתוני משתמשים עדיין — הנתונים יופיעו לאחר שמשתמשים ישתמשו ביועץ ה-AI
+            </div>
           ) : (
             <div className="divide-y divide-outline-variant/5">
               {users.map(u => (
                 <div key={u.uid} className="flex items-center justify-between px-6 py-4 hover:bg-surface-container-high/30 transition-colors">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm text-on-surface">{u.email}</span>
-                      {u.isAdmin && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">מנהל</span>
-                      )}
+                      <span className="font-medium text-sm text-on-surface truncate">{u.email}</span>
+                      {u.isAdmin && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">מנהל</span>}
                     </div>
-                    <div className="text-xs text-on-surface-variant mt-0.5">UID: {u.uid.slice(0, 12)}...</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5 font-mono">{u.uid.slice(0,16)}...</div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="flex items-center gap-1 text-xs text-on-surface-variant">
+                    <div className="text-xs text-on-surface-variant flex items-center gap-1">
                       <Coins size={12} className="text-primary" />
-                      <span>{u.credits} קרדיטים</span>
+                      {u.freeLeft + u.extra} קרדיטים
                     </div>
-                    <button
-                      onClick={() => { setCreditUid(u.uid); setActiveTab('credits'); }}
-                      className="text-xs text-primary hover:underline"
-                    >
+                    <button onClick={() => { setCreditUid(u.uid); setActiveTab('credits'); }}
+                      className="text-xs text-primary hover:underline">
                       הוסף קרדיטים
                     </button>
                   </div>
@@ -188,7 +195,7 @@ const AdminContent: React.FC = () => {
         </div>
       )}
 
-      {/* Admins tab */}
+      {/* Admins */}
       {activeTab === 'admins' && (
         <div className="space-y-4">
           <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5 overflow-hidden">
@@ -218,16 +225,13 @@ const AdminContent: React.FC = () => {
               ))}
             </div>
           </div>
-
-          {/* הוספת מנהל */}
           <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5">
             <h4 className="font-bold mb-4">הוסף מנהל חדש</h4>
             <div className="flex gap-3">
               <input
                 className="flex-1 bg-surface-container-high border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                placeholder="כתובת דוא&quot;ל של המנהל החדש"
-                value={newAdmin}
-                onChange={e => setNewAdmin(e.target.value)}
+                placeholder='כתובת דוא"ל של המנהל החדש'
+                value={newAdmin} onChange={e => setNewAdmin(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addAdmin()}
               />
               <button onClick={addAdmin} disabled={!newAdmin.trim()}
@@ -239,25 +243,24 @@ const AdminContent: React.FC = () => {
         </div>
       )}
 
-      {/* Credits tab */}
+      {/* Credits */}
       {activeTab === 'credits' && (
         <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5">
           <h3 className="font-bold mb-2">הוספת קרדיטים למשתמש</h3>
-          <p className="text-xs text-on-surface-variant mb-5">כל משתמש מקבל 10 קרדיטים חינם בחודש. ניתן להוסיף קרדיטים נוספים ידנית.</p>
+          <p className="text-xs text-on-surface-variant mb-5">כל משתמש מקבל 10 קרדיטים חינם בחודש.</p>
           <div className="space-y-4">
             <div>
               <label className="text-xs font-medium text-on-surface-variant block mb-1.5">UID של המשתמש</label>
               <input
-                className="w-full bg-surface-container-high border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                placeholder="העתק UID מרשימת המשתמשים"
-                value={creditUid}
-                onChange={e => setCreditUid(e.target.value)}
+                className="w-full bg-surface-container-high border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30 font-mono"
+                placeholder="העתק UID מרשימת המשתמשים למעלה"
+                value={creditUid} onChange={e => setCreditUid(e.target.value)}
               />
             </div>
             <div>
               <label className="text-xs font-medium text-on-surface-variant block mb-1.5">כמות קרדיטים</label>
-              <div className="flex gap-2 mb-2">
-                {[10, 25, 50, 100].map(n => (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {[10,25,50,100].map(n => (
                   <button key={n} onClick={() => setCreditAmt(String(n))}
                     className={cn('px-4 py-2 rounded-xl text-sm font-medium border transition-all',
                       creditAmt === String(n) ? 'border-primary/40 bg-primary/10 text-primary' : 'border-outline-variant/20 text-on-surface-variant'
@@ -268,9 +271,7 @@ const AdminContent: React.FC = () => {
               </div>
               <input type="number"
                 className="w-full bg-surface-container-high border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                placeholder="או הזן כמות מותאמת"
-                value={creditAmt}
-                onChange={e => setCreditAmt(e.target.value)}
+                placeholder="כמות מותאמת" value={creditAmt} onChange={e => setCreditAmt(e.target.value)}
               />
             </div>
             <button onClick={addCredits} disabled={!creditUid.trim() || !creditAmt}
@@ -285,7 +286,5 @@ const AdminContent: React.FC = () => {
 };
 
 export const Admin: React.FC = () => (
-  <AdminGuard>
-    <AdminContent />
-  </AdminGuard>
+  <AdminGuard><AdminContent /></AdminGuard>
 );
