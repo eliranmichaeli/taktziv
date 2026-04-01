@@ -2,6 +2,25 @@
 // מביא רשימת משתמשים מ-Firebase Auth
 // דורש FIREBASE_SERVICE_ACCOUNT_JSON ב-Netlify environment variables
 
+import type { Handler } from '@netlify/functions';
+
+const ADMIN_EMAIL = 'eliran1456@gmail.com';
+
+// אימות token פשוט
+async function verifyAdmin(token: string): Promise<boolean> {
+  const apiKey = process.env.VITE_FIREBASE_API_KEY;
+  if (!apiKey) return false;
+  try {
+    const res  = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: token }) }
+    );
+    if (!res.ok) return false;
+    const data = await res.json() as any;
+    return data.users?.[0]?.email === ADMIN_EMAIL;
+  } catch { return false; }
+}
+
 // קבלת access token מ-Service Account
 async function getAccessToken(serviceAccount: any): Promise<string | null> {
   try {
