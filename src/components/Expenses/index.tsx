@@ -27,7 +27,7 @@ const ExpenseRow: React.FC<{
     ? `הוראת קבע${billingDay ? ` · יום ${billingDay}` : ''}${standingOrderExpiry ? ` · עד ${standingOrderExpiry}` : ''}`
     : paymentMethod === 'credit' && cardName
     ? `${cardName}${billingDay ? ` · יום חיוב ${billingDay}` : ''}`
-    : paymentMethod === 'cash' ? 'מזומן' : '';
+    : paymentMethod === 'cash' ? (t(lang,'cash')||'מזומן') : '';
 
   return (
     <div className="flex items-center justify-between py-3.5 border-b border-outline-variant/6 last:border-0 group hover:bg-surface-container-highest/30 rounded-lg px-2 -mx-2 transition-colors">
@@ -137,7 +137,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">
-            {existing ? 'עריכת' : 'הוספת'} {isFixed ? 'הוצאה קבועה' : 'הוצאה משתנה'}
+            {existing ? (t(lang,'edit')||'עריכת') : ''} {isFixed ? (t(lang,'fixedExpenses')||(t(lang,'fixedExpenses')||'הוצאה קבועה')) : (t(lang,'variableExpenses')||(t(lang,'variableExpenses')||'הוצאה משתנה'))}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
@@ -404,7 +404,7 @@ const ExcelImportModal: React.FC<{
         )}
 
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">ביטול</button>
+          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">{t(lang,'cancel')}</button>
           <button onClick={handleImport} disabled={preview.length === 0 || importing}
             className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
             {importing ? 'מייבא...' : `ייבא ${preview.length} הוצאות`}

@@ -47,7 +47,7 @@ const SavingsCard: React.FC<{
             />
           </div>
           <div className="flex justify-between text-[10px] text-on-surface-variant">
-            <span>{pct}% הושלם</span>
+            <span>{pct}{t(lang,'percentDone')||'% הושלם'}</span>
             {plan.target && current < plan.target && (
               <span>נותר {sym}{Math.round(plan.target - current).toLocaleString('he-IL')}</span>
             )}
@@ -215,7 +215,7 @@ const DepositModal: React.FC<{ plan: SavingsPlan; sym: string; onClose: () => vo
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high rounded-xl text-sm font-medium">{t(lang, 'cancel')}</button>
-          <button onClick={handleSave} disabled={!amount || parseFloat(amount) <= 0} className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">הוסף הפקדה</button>
+          <button onClick={handleSave} disabled={!amount || parseFloat(amount) <= 0} className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">{t(lang,'deposit')}</button>
         </div>
       </motion.div>
     </motion.div>

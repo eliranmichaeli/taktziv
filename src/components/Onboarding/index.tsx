@@ -596,7 +596,7 @@ export const Onboarding: React.FC = () => {
           </button>
         )}
         <button onClick={nextStep} disabled={saving} className="flex-1 py-3.5 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-60 hover:shadow-xl hover:shadow-primary/20 transition-all">
-          {saving ? '⏳ שומר...' : isLast ? '✅ סיים והתחל!' : 'המשך →'}
+          {saving ? (t(lang,'loading')||'שומר...') : isLast ? (t(lang,'finish')||'✅ סיים!') : (t(lang,'continue')||'המשך →')}
         </button>
       </div>
     </div>

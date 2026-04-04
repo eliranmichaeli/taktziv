@@ -66,7 +66,7 @@ const HolidayAlerts: React.FC<{ lang: string }> = ({ lang }) => {
     <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-outline-variant/8">
         <Bell size={15} className="text-primary" />
-        <span className="font-semibold text-sm">{isHebrew ? 'חגים קרובים — תכנן מראש' : 'Upcoming Holidays — Plan Ahead'}</span>
+        <span className="font-semibold text-sm">{t(lang,'upcomingHolidays')}</span>
       </div>
       <div className="divide-y divide-outline-variant/5">
         {upcoming.map((h, i) => {

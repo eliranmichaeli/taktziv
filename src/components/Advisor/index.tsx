@@ -11,13 +11,14 @@ import {
 import type { ChatMessage, ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
 
-const SUGGESTIONS = [
-  'איך אני עומד מבחינה פיננסית החודש?',
-  'מה ההוצאה הגדולה ביותר שאפשר לצמצם?',
-  'כמה חודשי מחייה יש לי בחיסכון?',
-  'תן לי טיפ אחד להגדלת החיסכון',
-  'איפה אני חורג מהתקציב?',
-];
+const SUGGESTIONS_MAP: Record<string, string[]> = {
+  he: ['איך אני עומד מבחינה פיננסית החודש?','מה ההוצאה הגדולה ביותר שאפשר לצמצם?','כמה חודשי מחייה יש לי בחיסכון?','תן לי טיפ אחד להגדלת החיסכון','איפה אני חורג מהתקציב?'],
+  en: ['How am I doing financially this month?','What is my biggest expense I can reduce?','How many months of savings do I have?','Give me one tip to increase savings','Where am I over budget?'],
+  ru: ['Как я себя чувствую финансово в этом месяце?','Какой мой самый большой расход?','Сколько месяцев сбережений у меня есть?','Дайте один совет по увеличению сбережений','Где я превысил бюджет?'],
+  ar: ['كيف أقف ماليًا هذا الشهر؟','ما هو أكبر إنفاق يمكن تقليله؟','كم شهرًا من المدخرات لدي؟','أعطني نصيحة لزيادة المدخرات','أين تجاوزت الميزانية؟'],
+  de: ['Wie stehe ich finanziell diesen Monat?','Was ist meine größte Ausgabe?','Wie viele Monate Ersparnisse habe ich?','Geben Sie einen Tipp zur Erhöhung der Ersparnisse','Wo überziehe ich das Budget?'],
+  fr: ['Comment je me porte financièrement ce mois?','Quelle est ma plus grande dépense?','Combien de mois d'épargne ai-je?','Donnez-moi un conseil pour augmenter les économies','Où dépasse-je le budget?'],
+};
 
 export const Advisor: React.FC = () => {
   const { db, month, year, lang } = useApp();
@@ -199,7 +200,7 @@ export const Advisor: React.FC = () => {
       {/* Suggestions */}
       {messages.length < 2 && (
         <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s, i) => (
+          {(SUGGESTIONS_MAP[lang] || SUGGESTIONS_MAP.he).map((s, i) => (
             <button key={i} onClick={() => send(s)}
               className="px-3 py-2 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/10 rounded-full text-xs text-on-surface-variant hover:text-on-surface transition-all">
               {s}

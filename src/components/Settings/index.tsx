@@ -34,15 +34,15 @@ export const Settings: React.FC = () => {
   };
 
   const addCard = async () => {
-    const name = prompt('שם הכרטיס:');
+    const name = prompt(t(lang,'cardName') || 'שם הכרטיס:');
     if (!name) return;
-    const day  = parseInt(prompt('יום חיוב (1-31):') || '10') || 10;
+    const day  = parseInt(prompt(t(lang,'billingDay') || 'יום חיוב (1-31):') || '10') || 10;
     const card: CreditCardType = { id: uid(), name, billingDay: day };
     await updateDB(d => ({ ...d, creditCards: [...(d.creditCards || []), card] }));
   };
 
   const deleteCard = async (id: string) => {
-    if (!confirm('למחוק כרטיס?')) return;
+    if (!confirm(t(lang,'confirmDelete') || 'למחוק כרטיס?')) return;
     await updateDB(d => ({ ...d, creditCards: (d.creditCards || []).filter(c => c.id !== id) }));
   };
 
@@ -197,7 +197,7 @@ export const Settings: React.FC = () => {
           )}
         >
           <Save size={17} />
-          {saved ? '✓ נשמר!' : 'שמור שינויים'}
+          {saved ? (t(lang,'saved') || '✓ נשמר!') : (t(lang,'save') || 'שמור')}
         </button>
       </motion.div>
     </div>

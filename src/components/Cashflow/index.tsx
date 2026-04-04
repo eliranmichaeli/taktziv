@@ -58,7 +58,7 @@ const StatCard: React.FC<{
           delta > 0 ? 'text-error' : delta < 0 ? 'text-primary' : 'text-on-surface-variant'
         )}>
           {delta > 0 ? <TrendingUp size={12} /> : delta < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
-          <span>{Math.abs(pct)}% מהחודש הקודם</span>
+          <span>{Math.abs(pct)}{t(lang,'fromLastMonth') || '% מהחודש הקודם'}</span>
         </div>
       )}
     </div>
@@ -143,8 +143,8 @@ export const Cashflow: React.FC = () => {
       <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/5">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-bold text-base">תזרים שנתי — {year}</h2>
-            <p className="text-xs text-on-surface-variant mt-0.5">הכנסות מול הוצאות לאורך השנה</p>
+            <h2 className="font-bold text-base">{t(lang,'annualCashflow') || 'תזרים שנתי'} — {year}</h2>
+            <p className="text-xs text-on-surface-variant mt-0.5">{t(lang,'incomeVsExpenses') || 'הכנסות מול הוצאות לאורך השנה'}</p>
           </div>
           <div className="flex gap-1.5">
             {(['bar', 'line'] as const).map(v => (

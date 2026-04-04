@@ -49,7 +49,7 @@ export const Freedom: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-primary/10 text-primary rounded-xl"><Sparkles size={22} /></div>
             <div>
-              <h1 className="text-2xl font-black font-headline">עצמאות כלכלית</h1>
+              <h1 className="text-2xl font-black font-headline">{t(lang,'freedom')}</h1>
               <div className="text-xs text-primary font-bold tracking-wider mt-0.5">FINANCIAL INDEPENDENCE</div>
             </div>
           </div>

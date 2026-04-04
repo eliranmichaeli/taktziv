@@ -33,7 +33,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       <div className="min-h-screen bg-surface flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-surface-container-low rounded-2xl p-8 border border-outline-variant/15 text-center space-y-4">
           <div className="text-4xl">⚠️</div>
-          <h1 className="text-xl font-bold text-on-surface">אירעה שגיאה בלתי צפויה</h1>
+          <h1 className="text-xl font-bold text-on-surface">{t ? t('he','unexpectedError') : 'אירעה שגיאה בלתי צפויה'}</h1>
           <p className="text-sm text-on-surface-variant leading-relaxed">
             לא ניתן לטעון את האפליקציה. הנתונים שלך שמורים ולא הושפעו.
           </p>
