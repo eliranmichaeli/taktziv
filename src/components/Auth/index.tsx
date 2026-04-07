@@ -5,7 +5,7 @@ import {
   authEmailSignIn, authEmailRegister, authGoogle, authForgot,
   authUpdateProfile, authSendVerification, checkGoogleRedirect, auth,
 } from '../../lib/firebase';
-import { LANGS } from '../../lib/i18n';
+import { t, LANGS } from '../../lib/i18n';
 import type { LangCode } from '../../types';
 import { cn } from '../../lib/utils';
 

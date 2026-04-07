@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+import { t } from '../../lib/i18n';
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { Plus, Pencil, Trash2, X, Bell } from 'lucide-react';

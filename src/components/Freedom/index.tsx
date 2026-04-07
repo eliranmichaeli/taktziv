@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { RefreshCw, Sparkles, Calculator } from 'lucide-react';
+import { t } from '../../lib/i18n';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { getCurrencySymbol, calcCompound, CURRENCIES } from '../../lib/calculations';

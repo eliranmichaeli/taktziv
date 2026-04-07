@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { t } from '../../lib/i18n';
 import { ChevronLeft, Check, Plus, Trash2, ShieldCheck, CreditCard } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { CURRENCIES, uid } from '../../lib/calculations';
