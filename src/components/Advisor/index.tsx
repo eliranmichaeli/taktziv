@@ -12,12 +12,12 @@ import type { ChatMessage, ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
 
 const SUGGESTIONS_MAP: Record<string, string[]> = {
-  he: ['איך אני עומד מבחינה פיננסית החודש?','מה ההוצאה הגדולה ביותר שאפשר לצמצם?','כמה חודשי מחייה יש לי בחיסכון?','תן לי טיפ אחד להגדלת החיסכון','איפה אני חורג מהתקציב?'],
-  en: ['How am I doing financially this month?','What is my biggest expense I can reduce?','How many months of savings do I have?','Give me one tip to increase savings','Where am I over budget?'],
-  ru: ['Как я себя чувствую финансово в этом месяце?','Какой мой самый большой расход?','Сколько месяцев сбережений у меня есть?','Дайте один совет по увеличению сбережений','Где я превысил бюджет?'],
-  ar: ['كيف أقف ماليًا هذا الشهر؟','ما هو أكبر إنفاق يمكن تقليله؟','كم شهرًا من المدخرات لدي؟','أعطني نصيحة لزيادة المدخرات','أين تجاوزت الميزانية؟'],
-  de: ['Wie stehe ich finanziell diesen Monat?','Was ist meine größte Ausgabe?','Wie viele Monate Ersparnisse habe ich?','Geben Sie einen Tipp zur Erhöhung der Ersparnisse','Wo überziehe ich das Budget?'],
-  fr: ['Comment je me porte financièrement ce mois?','Quelle est ma plus grande dépense?','Combien de mois d'épargne ai-je?','Donnez-moi un conseil pour augmenter les économies','Où dépasse-je le budget?'],
+  he: ["איך אני עומד מבחינה פיננסית החודש?","מה ההוצאה הגדולה ביותר שאפשר לצמצם?","כמה חודשי מחייה יש לי בחיסכון?","תן לי טיפ אחד להגדלת החיסכון","איפה אני חורג מהתקציב?"],
+  en: ["How am I doing financially this month?","What is my biggest expense I can reduce?","How many months of savings do I have?","Give me one tip to increase savings","Where am I over budget?"],
+  ru: ["Как я себя чувствую финансово в этом месяце?","Какой мой самый большой расход?","Сколько месяцев сбережений у меня есть?","Дайте один совет по увеличению сбережений","Где я превысил бюджет?"],
+  ar: ["كيف أقف ماليًا هذا الشهر؟","ما هو أكبر إنفاق يمكن تقليله؟","كم شهرًا من المدخرات لدي؟","أعطني نصيحة لزيادة المدخرات","أين تجاوزت الميزانية؟"],
+  de: ["Wie stehe ich finanziell diesen Monat?","Was ist meine größte Ausgabe?","Wie viele Monate Ersparnisse habe ich?","Geben Sie einen Tipp zur Erhöhung der Ersparnisse","Wo überziehe ich das Budget?"],
+  fr: ["Comment je me porte ce mois?","Quelle est ma plus grande depense?","Combien de mois d'epargne ai-je?","Donnez-moi un conseil pour augmenter les economies","Ou depasse-je le budget?"],
 };
 
 export const Advisor: React.FC = () => {
