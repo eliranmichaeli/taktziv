@@ -7,7 +7,7 @@ import { getCurrencySymbol, calcCompound, CURRENCIES } from '../../lib/calculati
 import { cn } from '../../lib/utils';
 
 export const Freedom: React.FC = () => {
-  const { db } = useApp();
+  const { db, lang} = useApp();
   const sym = getCurrencySymbol(db);
   const cur = db.settings.currency || 'ILS';
 

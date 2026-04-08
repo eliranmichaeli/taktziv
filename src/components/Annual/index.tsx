@@ -104,7 +104,7 @@ const HolidayAlerts: React.FC<{ lang: string }> = ({ lang }) => {
 interface EventFormProps { event?: AnnualEvent; scope: ScopeType; year: number; onClose: () => void }
 
 const EventForm: React.FC<EventFormProps> = ({ event, scope, year, onClose }) => {
-  const { updateDB } = useApp();
+  const { updateDB , lang } = useApp();
   const [title,    setTitle]    = useState(event?.title       || '');
   const [desc,     setDesc]     = useState(event?.description || '');
   const [month,    setMonth]    = useState(event?.month       ?? new Date().getMonth());

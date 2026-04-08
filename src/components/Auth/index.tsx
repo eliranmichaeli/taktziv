@@ -208,21 +208,21 @@ export const AuthScreen: React.FC = () => {
               <div className="relative">
                 <User className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                  placeholder={t(lang,'fullName')||'שם מלא'} value={fullName} onChange={e => setFullName(e.target.value)} />
+                  placeholder={t(langCode,'fullName')||'שם מלא'} value={fullName} onChange={e => setFullName(e.target.value)} />
               </div>
             )}
             <div className="relative">
               <Mail className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
               <input type="email" dir="ltr"
                 className="w-full ps-10 pe-4 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                placeholder={t(lang,'email')||'כתובת דוא\"ל'} value={email} onChange={e => setEmail(e.target.value)} />
+                placeholder={t(langCode,'email')||'כתובת דוא\"ל'} value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             {mode !== 'forgot' && (
               <div className="relative">
                 <Lock className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input type={showPass ? 'text' : 'password'} dir="ltr"
                   className="w-full ps-10 pe-10 py-3 bg-surface-container-high border-0 rounded-xl text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                  placeholder={t(lang,'passwordHint')||'סיסמה (לפחות 6 תווים)'} value={password}
+                  placeholder={t(langCode,'passwordHint')||'סיסמה (לפחות 6 תווים)'} value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
                 <button onClick={() => setShowPass(!showPass)} className="absolute end-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
@@ -242,7 +242,7 @@ export const AuthScreen: React.FC = () => {
             )}
             <button onClick={mode === 'forgot' ? handleForgot : handleSubmit} disabled={loading}
               className="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-60 hover:shadow-xl hover:shadow-primary/20 transition-all">
-              {loading ? '...' : mode === 'login' ? (t(lang,'signIn')||'התחבר') : mode === 'register' ? (t(lang,'signUp')||'הירשם') : (t(lang,'sendReset')||'שלח קישור איפוס')}
+              {loading ? '...' : mode === 'login' ? (t(langCode,'signIn')||'התחבר') : mode === 'register' ? (t(langCode,'signUp')||'הירשם') : (t(langCode,'sendReset')||'שלח קישור איפוס')}
             </button>
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-outline-variant/20" />
@@ -257,7 +257,7 @@ export const AuthScreen: React.FC = () => {
                 <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
                 <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/>
               </svg>
-              {t(lang,'continueWithGoogle')||'המשך עם Google'}
+              {t(langCode,'continueWithGoogle')||'המשך עם Google'}
             </button>
             {mode === 'login' && (
               <button onClick={() => setMode('forgot')} className="w-full text-center text-xs text-on-surface-variant hover:text-primary transition-colors">

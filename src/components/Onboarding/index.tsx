@@ -173,7 +173,7 @@ const CardEditor: React.FC<{
 
 // ── Main Onboarding ───────────────────────────────────
 export const Onboarding: React.FC = () => {
-  const { updateDB } = useApp();
+  const { updateDB, lang} = useApp();
   const [data,   setData]   = useState<OBData>(defaultData());
   const [saving, setSaving] = useState(false);
   const [err,    setErr]    = useState('');
