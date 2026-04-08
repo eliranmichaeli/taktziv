@@ -12,8 +12,8 @@ import { Advisor }     from './components/Advisor';
 import { Freedom }     from './components/Freedom';
 import { Settings }    from './components/Settings';
 import { AuthScreen }  from './components/Auth';
+import { SubscriptionScreen, SubscriptionBanner } from './components/Subscription';
 import { Onboarding }  from './components/Onboarding';
-import { Admin }       from './components/Admin';
 import { isRTL }       from './lib/i18n';
 import { cn }          from './lib/utils';
 
@@ -60,13 +60,12 @@ const Content: React.FC = () => {
     case 'advisor':    return <Advisor />;
     case 'freedom':    return <Freedom />;
     case 'settings':   return <Settings />;
-    case 'admin':     return <Admin />;
     default:           return <Dashboard />;
   }
 };
 
 const InnerApp: React.FC = () => {
-  const { user, authReady, db, lang, tab } = useApp();
+  const { user, authReady, db, lang } = useApp();
   const rtl = isRTL(lang);
 
   if (!authReady) {
@@ -87,6 +86,7 @@ const InnerApp: React.FC = () => {
       <div className="hidden md:block">
         <Sidebar />
         <TopBar />
+        <SubscriptionBanner />
       </div>
       <main className={cn('pt-0 md:pt-14', rtl ? 'md:mr-[200px]' : 'md:ml-[200px]')}>
         <div className="px-4 py-5 md:px-8 md:py-7 max-w-[1100px] mx-auto">
