@@ -65,7 +65,7 @@ const Content: React.FC = () => {
 };
 
 const InnerApp: React.FC = () => {
-  const { user, authReady, db, lang } = useApp();
+  const { user, authReady, db, lang, tab } = useApp();
   const rtl = isRTL(lang);
 
   if (!authReady) {
