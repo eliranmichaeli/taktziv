@@ -33,14 +33,8 @@ export const Sidebar: React.FC = () => {
     { id: 'advisor',   label: t(lang, 'advisor'),  icon: Bot },
     { id: 'freedom',   label: t(lang, 'freedom'),  icon: Star },
     { id: 'settings',  label: t(lang, 'settings'), icon: Settings },
-    ...(user?.email === 'eliran1456@gmail.com' ? [{ id: 'admin' as TabId, label: t(lang,'adminPanel') || 'ניהול', icon: ShieldCheck }] : []),
+    ...(user?.email === 'eliran1456@gmail.com' ? [{ id: 'admin' as TabId, label: 'ניהול', icon: ShieldCheck }] : []),
   ];
-
-  // Admin — רק למנהל
-  const ADMIN_EMAIL = 'eliran1456@gmail.com';
-  if (db && (db as any)._adminEmail === ADMIN_EMAIL || true) {
-    // נטפל בזה ב-useApp
-  }
 
   return (
     <aside className={cn(
@@ -86,7 +80,7 @@ export const Sidebar: React.FC = () => {
           className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/5"
         >
           <LogOut size={14} />
-          <span>{t(lang,'logout')}</span>
+          <span>התנתק</span>
         </button>
       </div>
     </aside>
@@ -118,9 +112,9 @@ export const TopBar: React.FC = () => {
   }, []);
 
   const themeOptions: { val: ThemeMode; icon: React.ElementType; label: string }[] = [
-    { val: 'light', icon: Sun,     label: t(lang,'light') },
-    { val: 'dark',  icon: Moon,    label: t(lang,'dark') },
-    { val: 'auto',  icon: Monitor, label: t(lang,'auto') },
+    { val: 'light', icon: Sun,     label: 'בהיר' },
+    { val: 'dark',  icon: Moon,    label: 'כהה' },
+    { val: 'auto',  icon: Monitor, label: 'אוטומטי' },
   ];
 
   return (
@@ -246,7 +240,7 @@ export const TopBar: React.FC = () => {
                   className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
                 >
                   <Settings size={14} />
-                  <span>{t(lang,'settings')}</span>
+                  <span>הגדרות</span>
                 </button>
 
                 {/* התנתקות */}
@@ -255,7 +249,7 @@ export const TopBar: React.FC = () => {
                   className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors border-t border-outline-variant/10"
                 >
                   <LogOut size={14} />
-                  <span>{t(lang,'logout')}</span>
+                  <span>התנתק</span>
                 </button>
               </motion.div>
             )}

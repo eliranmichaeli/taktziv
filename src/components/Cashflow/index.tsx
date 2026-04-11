@@ -40,7 +40,8 @@ const StatCard: React.FC<{
   prev?: number;
   sym: string;
   accent?: boolean;
-}> = ({ label, value, prev, sym, accent }) => {
+  lang: string;
+}> = ({ label, value, prev, sym, accent, lang }) => {
   const delta = prev !== undefined ? value - prev : 0;
   const pct   = prev && prev !== 0 ? Math.round((delta / Math.abs(prev)) * 100) : 0;
   return (
@@ -125,9 +126,9 @@ export const Cashflow: React.FC = () => {
     <div className="space-y-6 max-w-5xl">
       {/* Header stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t(lang, 'income')}     value={curInc}  sym={sym} accent />
-        <StatCard label={t(lang, 'expenses')}   value={curExp}  prev={prevExp} sym={sym} />
-        <StatCard label={t(lang, 'balance')}    value={curNet}  sym={sym} />
+        <StatCard label={t(lang, 'income')}     value={curInc}  sym={sym} accent lang={lang} />
+        <StatCard label={t(lang, 'expenses')}   value={curExp}  prev={prevExp} sym={sym} lang={lang} />
+        <StatCard label={t(lang, 'balance')}    value={curNet}  sym={sym} lang={lang} />
         <div className="bg-surface-container-low rounded-2xl p-5 border border-outline-variant/5">
           <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">חיסכון מצטבר {year}</div>
           <div className={cn('text-2xl font-black font-headline', ytdNet >= 0 ? 'text-primary' : 'text-error')}>

@@ -8,9 +8,9 @@ import type { SavingsPlan, ScopeType } from '../../types';
 import { cn } from '../../lib/utils';
 
 const SavingsCard: React.FC<{
-  plan: SavingsPlan; sym: string;
+  plan: SavingsPlan; sym: string; lang: string;
   onEdit: () => void; onDelete: () => void; onDeposit: () => void;
-}> = ({ plan, sym, onEdit, onDelete, onDeposit }) => {
+}> = ({ plan, sym, lang, onEdit, onDelete, onDeposit }) => {
   const current  = calcSavingsCurrent(plan);
   const pct      = plan.target ? Math.min(100, Math.round(current / plan.target * 100)) : null;
   const warning  = validateSavingsPlan(plan);
@@ -82,7 +82,7 @@ const SavingsCard: React.FC<{
 
       <div className="flex gap-2 pt-1">
         <button onClick={onDeposit} className="flex-1 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-colors">
-          {t('he', 'deposit')}
+          {t(lang, 'deposit')}
         </button>
         <button onClick={onEdit}   className="p-2 rounded-xl hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-colors"><Pencil size={14} /></button>
         <button onClick={onDelete} className="p-2 rounded-xl hover:bg-error/10 text-on-surface-variant hover:text-error transition-colors"><Trash2 size={14} /></button>
@@ -285,7 +285,7 @@ export const Savings: React.FC = () => {
                 </div>
               ) : plans.map(plan => (
                 <SavingsCard
-                  key={plan.id} plan={plan} sym={sym}
+                  key={plan.id} plan={plan} sym={sym} lang={lang}
                   onEdit={() => setPlanModal({ stype: sec.stype, plan })}
                   onDelete={() => deletePlan(plan.id)}
                   onDeposit={() => setDepositModal(plan)}
