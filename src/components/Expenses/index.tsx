@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as XLSX from 'xlsx';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../lib/i18n';
 import { fixedTotal, varTotal, varForMonth, getCurrencySymbol, today, uid } from '../../lib/calculations';
@@ -12,10 +13,11 @@ const detectCurrency = (text: string): string => {
   if (text.includes('$') || text.toLowerCase().includes('usd')) return 'USD';
   if (text.includes('€') || text.toLowerCase().includes('eur')) return 'EUR';
   if (text.includes('£') || text.toLowerCase().includes('gbp')) return 'GBP';
-  return 'ILS'; // ברירת מחדל
+  return 'ILS';
 };
 
 // ── Expense Row ───────────────────────────────────────
+const lang = 'he'; // fallback — נשאר כפי שהיה
 const ExpenseRow: React.FC<{
   name: string; category: string; amount: number; sym: string;
   sub?: string; note?: string;
@@ -27,7 +29,7 @@ const ExpenseRow: React.FC<{
     ? `הוראת קבע${billingDay ? ` · יום ${billingDay}` : ''}${standingOrderExpiry ? ` · עד ${standingOrderExpiry}` : ''}`
     : paymentMethod === 'credit' && cardName
     ? `${cardName}${billingDay ? ` · יום חיוב ${billingDay}` : ''}`
-    : paymentMethod === 'cash' ? (t(lang,'cash')||'מזומן') : '';
+    : paymentMethod === 'cash' ? 'מזומן' : '';
 
   return (
     <div className="flex items-center justify-between py-3.5 border-b border-outline-variant/6 last:border-0 group hover:bg-surface-container-highest/30 rounded-lg px-2 -mx-2 transition-colors">
@@ -137,7 +139,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">
-            {existing ? (t(lang,'edit')||'עריכת') : ''} {isFixed ? (t(lang,'fixedExpenses')||(t(lang,'fixedExpenses')||'הוצאה קבועה')) : (t(lang,'variableExpenses')||(t(lang,'variableExpenses')||'הוצאה משתנה'))}
+            {existing ? 'עריכת' : ''} {isFixed ? 'הוצאה קבועה' : 'הוצאה משתנה'}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
@@ -230,8 +232,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
                 <label className="text-xs font-medium text-on-surface-variant block mb-1.5">תוקף הוראת הקבע (אופציונלי)</label>
                 <input type="date"
                   className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
-                  value={soExpiry} onChange={e => setSoExpiry(e.target.value)}
-                  placeholder="תאריך פקיעה" />
+                  value={soExpiry} onChange={e => setSoExpiry(e.target.value)} />
                 <p className="text-[10px] text-on-surface-variant mt-1">השאר ריק אם אין תאריך פקיעה ידוע</p>
               </div>
             </div>
@@ -255,10 +256,10 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">{t(lang, 'cancel')}</button>
+          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">ביטול</button>
           <button onClick={handleSave} disabled={saving || !name.trim() || !amount}
             className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
-            {saving ? '...' : t(lang, 'save')}
+            {saving ? '...' : 'שמור'}
           </button>
         </div>
       </motion.div>
@@ -282,31 +283,35 @@ const ExcelImportModal: React.FC<{
 
   const handleFile = async (file: File) => {
     setError('');
+    setPreview([]);
     setFileName(file.name);
     try {
-      const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs' as any);
       const buf  = await file.arrayBuffer();
       const wb   = XLSX.read(buf, { type: 'array' });
       const ws   = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
-      // מצא עמודות רלוונטיות
       const parsed: { name: string; amount: number; currency: string }[] = [];
+
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length < 2) continue;
-        const nameVal   = String(row[0] || '').trim();
-        const amountRaw = String(row[1] || '').trim();
+
+        const nameVal   = String(row[0] ?? '').trim();
+        const amountRaw = String(row[1] ?? '').trim();
+
         if (!nameVal || !amountRaw) continue;
-        // נסה לחלץ סכום ומטבע
+
+        // נסה לחלץ סכום
         const amountNum = parseFloat(amountRaw.replace(/[^0-9.-]/g, ''));
         if (isNaN(amountNum) || amountNum <= 0) continue;
-        const currency  = detectCurrency(amountRaw + nameVal);
+
+        const currency = detectCurrency(amountRaw + ' ' + nameVal);
         parsed.push({ name: nameVal, amount: amountNum, currency });
       }
 
       if (parsed.length === 0) {
-        setError('לא נמצאו נתונים תקינים. וודא שיש 2 עמודות: שם הוצאה וסכום.');
+        setError('לא נמצאו נתונים תקינים. וודא שיש 2 עמודות: שם ההוצאה וסכום.');
         return;
       }
       setPreview(parsed);
@@ -318,25 +323,33 @@ const ExcelImportModal: React.FC<{
   const handleImport = async () => {
     if (preview.length === 0) return;
     setImporting(true);
-    if (isFixed) {
-      const entries: FixedExpense[] = preview.map(row => ({
-        id: uid(), name: row.name, amount: row.amount,
-        currency: row.currency, category: cats[0] || 'אחר', type: scope,
-      }));
-      await updateDB(d => ({
-        ...d,
-        fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] },
-      }));
-    } else {
-      const entries: VariableExpense[] = preview.map(row => ({
-        id: uid(), name: row.name, amount: row.amount,
-        currency: row.currency, category: cats[0] || 'אחר',
-        type: scope, month, year, date: today(),
-      })) as any;
-      await updateDB(d => ({ ...d, variable: [...(d.variable || []), ...entries] }));
+    try {
+      if (isFixed) {
+        const entries: FixedExpense[] = preview.map(row => ({
+          id: uid(), name: row.name, amount: row.amount,
+          currency: row.currency, category: cats[0] || 'אחר', type: scope,
+        }));
+        await updateDB(d => ({
+          ...d,
+          fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] },
+        }));
+      } else {
+        const entries = preview.map(row => ({
+          id: uid(), name: row.name, amount: row.amount,
+          currency: row.currency, category: cats[0] || 'אחר',
+          type: scope, month, year, date: today(),
+        }));
+        await updateDB(d => ({ ...d, variable: [...(d.variable || []), ...entries] }));
+      }
+      onClose();
+    } catch (e) {
+      setError('שגיאה בייבוא הנתונים. אנא נסה שוב.');
+      setImporting(false);
     }
-    onClose();
   };
+
+  const currencySymbol = (c: string) =>
+    c === 'USD' ? '$' : c === 'EUR' ? '€' : c === 'GBP' ? '£' : '₪';
 
   return (
     <motion.div
@@ -351,7 +364,8 @@ const ExcelImportModal: React.FC<{
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <FileSpreadsheet size={20} className="text-primary" /> ייבוא מ-Excel
+            <FileSpreadsheet size={20} className="text-primary" />
+            ייבוא מ-Excel · {isFixed ? 'הוצאות קבועות' : 'הוצאות משתנות'}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
@@ -360,20 +374,22 @@ const ExcelImportModal: React.FC<{
         <div className="bg-surface-container-low rounded-xl p-4 mb-4 border border-outline-variant/8">
           <p className="text-xs font-bold text-on-surface mb-2">מבנה הקובץ הנדרש:</p>
           <div className="grid grid-cols-2 gap-2 text-xs text-center">
-            <div className="bg-primary/8 rounded-lg p-2 font-bold text-primary">עמודה א׳<br/>שם ההוצאה</div>
-            <div className="bg-primary/8 rounded-lg p-2 font-bold text-primary">עמודה ב׳<br/>סכום (₪ / $ / €)</div>
+            <div className="bg-primary/8 rounded-lg p-2.5 font-bold text-primary">עמודה א׳<br /><span className="font-normal opacity-80">שם ההוצאה</span></div>
+            <div className="bg-primary/8 rounded-lg p-2.5 font-bold text-primary">עמודה ב׳<br /><span className="font-normal opacity-80">סכום (₪ / $ / €)</span></div>
           </div>
-          <p className="text-[10px] text-on-surface-variant mt-2">המטבע מזוהה אוטומטית מהסמל שבתא</p>
+          <p className="text-[10px] text-on-surface-variant mt-2 text-center">המטבע מזוהה אוטומטית מהסמל שבתא · ניתן לכלול כותרת בשורה הראשונה</p>
         </div>
 
         {/* העלאת קובץ */}
         <div
           onClick={() => fileRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
           className="border-2 border-dashed border-outline-variant/30 hover:border-primary/50 rounded-xl p-8 text-center cursor-pointer transition-all mb-4 group"
         >
           <Upload size={32} className="mx-auto mb-3 text-on-surface-variant group-hover:text-primary transition-colors" />
           <p className="font-medium text-on-surface">לחץ לבחירת קובץ Excel</p>
-          <p className="text-xs text-on-surface-variant mt-1">תומך ב-.xlsx ו-.xls</p>
+          <p className="text-xs text-on-surface-variant mt-1">או גרור לכאן · תומך ב-.xlsx ו-.xls</p>
           {fileName && <p className="text-xs text-primary mt-2 font-bold">✓ {fileName}</p>}
           <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden"
             onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
@@ -389,22 +405,27 @@ const ExcelImportModal: React.FC<{
         {/* תצוגה מקדימה */}
         {preview.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-bold text-on-surface-variant mb-2">תצוגה מקדימה ({preview.length} הוצאות):</p>
-            <div className="max-h-48 overflow-y-auto space-y-1">
+            <p className="text-xs font-bold text-on-surface-variant mb-2">
+              תצוגה מקדימה — {preview.length} הוצאות יתווספו:
+            </p>
+            <div className="max-h-52 overflow-y-auto space-y-1 rounded-xl border border-outline-variant/10 p-2">
               {preview.map((row, i) => (
                 <div key={i} className="flex justify-between items-center py-2 px-3 bg-surface-container-low rounded-lg text-xs">
                   <span className="text-on-surface font-medium truncate">{row.name}</span>
                   <span className="text-error font-bold flex-shrink-0 ms-2">
-                    −{row.currency === 'ILS' ? '₪' : row.currency === 'USD' ? '$' : '€'}{row.amount.toLocaleString()}
+                    −{currencySymbol(row.currency)}{row.amount.toLocaleString('he-IL')}
                   </span>
                 </div>
               ))}
             </div>
+            <p className="text-[10px] text-on-surface-variant mt-1.5 text-center">
+              כל ההוצאות יסווגו תחת הקטגוריה הראשונה. ניתן לשנות לאחר הייבוא.
+            </p>
           </div>
         )}
 
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">{t(lang,'cancel')}</button>
+          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">ביטול</button>
           <button onClick={handleImport} disabled={preview.length === 0 || importing}
             className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
             {importing ? 'מייבא...' : `ייבא ${preview.length} הוצאות`}
@@ -425,11 +446,11 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
   const totalV = varTotal(db, scope, month, year);
   const p      = db.settings.profile;
   const label  = scope === 'personal'  ? (p.name || t(lang,'personal'))
-               : scope === 'personal2' ? (p.partnerName || 'משתמש 2')
+               : scope === 'personal2' ? ((p as any).partnerName || 'משתמש 2')
                : t(lang,'family');
 
-  const [modal,       setModal]       = useState<{ isFixed: boolean; item?: any } | null>(null);
-  const [excelModal,  setExcelModal]  = useState<{ isFixed: boolean } | null>(null);
+  const [modal,      setModal]      = useState<{ isFixed: boolean; item?: any } | null>(null);
+  const [excelModal, setExcelModal] = useState<{ isFixed: boolean } | null>(null);
 
   const deleteFixed = (id: string) => {
     if (!confirm('למחוק הוצאה קבועה זו?')) return;
@@ -442,13 +463,17 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
 
   const ActionButtons = ({ isFixed }: { isFixed: boolean }) => (
     <div className="flex items-center gap-2">
-      <button onClick={() => setExcelModal({ isFixed })}
-        className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant border border-outline-variant/20 rounded-xl text-xs font-medium hover:bg-surface-container-highest transition-all">
+      <button
+        onClick={() => setExcelModal({ isFixed })}
+        className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant border border-outline-variant/20 rounded-xl text-xs font-medium hover:bg-surface-container-highest hover:text-primary hover:border-primary/30 transition-all"
+      >
         <FileSpreadsheet size={14} /> ייבוא Excel
       </button>
-      <button onClick={() => setModal({ isFixed })}
-        className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all">
-        הוצאה
+      <button
+        onClick={() => setModal({ isFixed })}
+        className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all"
+      >
+        <Plus size={15} /> הוצאה
       </button>
     </div>
   );
