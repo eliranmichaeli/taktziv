@@ -6,13 +6,15 @@ import { t } from '../../lib/i18n';
 import { CURRENCIES, uid } from '../../lib/calculations';
 import type { CreditCard as CreditCardType } from '../../types';
 import { cn } from '../../lib/utils';
-import { authSignOut } from '../../lib/firebase';
+import { resetFinancialData, deleteAccount } from '../../lib/firebase';
+import { auth } from '../../lib/firebase';
 
 export const Settings: React.FC = () => {
   const { db, lang, updateDB } = useApp();
   const s  = db.settings;
   const p  = s.profile;
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState<'reset' | 'delete' | null>(null);
 
   // Local draft state
   const [currency,   setCurrency]   = useState(s.currency || 'ILS');
@@ -46,11 +48,44 @@ export const Settings: React.FC = () => {
     await updateDB(d => ({ ...d, creditCards: (d.creditCards || []).filter(c => c.id !== id) }));
   };
 
+  // מחיקת נתונים פיננסים בלבד — המשתמש נשאר מחובר וחוזר לשאלון הראשוני
   const resetAccount = async () => {
-    if (!confirm('⚠️ פעולה זו תמחק את כל הנתונים לצמיתות. האם אתה בטוח?')) return;
+    if (!confirm('⚠️ פעולה זו תמחק את כל הנתונים הפיננסים לצמיתות. האם אתה בטוח?')) return;
     if (!confirm('האם אתה בטוח לחלוטין? לא ניתן לבטל.')) return;
-    // Sign out — user will need to re-onboard
-    await authSignOut();
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      setLoading('reset');
+      await resetFinancialData(user.uid);
+      // רענן את הדף כדי לטעון את הנתונים הריקים ולהציג את השאלון הראשוני
+      window.location.reload();
+    } catch (err) {
+      alert('אירעה שגיאה. אנא נסה שוב.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // מחיקת החשבון לצמיתות — הנתונים והמשתמש נמחקים
+  const handleDeleteAccount = async () => {
+    if (!confirm('⚠️ פעולה זו תמחק את החשבון שלך ואת כל הנתונים לצמיתות. לא ניתן לשחזר.')) return;
+    if (!confirm('האם אתה בטוח לחלוטין? הפעולה אינה הפיכה.')) return;
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      setLoading('delete');
+      await deleteAccount(user.uid);
+      // המשתמש נמחק — Firebase יזרוק אוטומטית לדף ההתחברות
+      window.location.reload();
+    } catch (err: any) {
+      if (err.code === 'auth/requires-recent-login') {
+        alert('מסיבות אבטחה, עליך להתנתק ולהתחבר מחדש לפני מחיקת החשבון.');
+      } else {
+        alert('אירעה שגיאה. אנא נסה שוב.');
+      }
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -175,13 +210,45 @@ export const Settings: React.FC = () => {
         <h2 className="text-lg font-bold mb-3 text-error flex items-center gap-2">
           <AlertTriangle size={20} /> אזור מסוכן
         </h2>
-        <p className="text-sm text-on-surface-variant mb-5">מחיקת נתונים היא פעולה בלתי הפיכה שתמחק את כל ההיסטוריה הפיננסית שלך.</p>
-        <button
-          onClick={resetAccount}
-          className="px-6 py-3 bg-error text-on-primary rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
-        >
-          אפס חשבון לצמיתות
-        </button>
+        <p className="text-sm text-on-surface-variant mb-5">
+          פעולות אלו הן בלתי הפיכות. יש לנקוט משנה זהירות.
+        </p>
+
+        <div className="space-y-4">
+          {/* Reset financial data */}
+          <div className="flex items-center justify-between p-4 bg-error/5 rounded-xl border border-error/10">
+            <div>
+              <p className="font-semibold text-sm text-on-surface">מחיקת נתונים פיננסיים</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                ימחק את כל ההיסטוריה הפיננסית ויחזיר אותך לשאלון הראשוני. החשבון שלך יישמר.
+              </p>
+            </div>
+            <button
+              onClick={resetAccount}
+              disabled={loading !== null}
+              className="mr-4 px-5 py-2.5 bg-error/10 text-error border border-error/20 rounded-xl font-bold text-sm hover:bg-error/20 transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {loading === 'reset' ? 'מוחק...' : 'אפס נתונים'}
+            </button>
+          </div>
+
+          {/* Delete account permanently */}
+          <div className="flex items-center justify-between p-4 bg-error/10 rounded-xl border border-error/20">
+            <div>
+              <p className="font-semibold text-sm text-error">מחיקת חשבון לצמיתות</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                ימחק את החשבון שלך ואת כל הנתונים לצמיתות. לא ניתן לשחזר.
+              </p>
+            </div>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={loading !== null}
+              className="mr-4 px-5 py-2.5 bg-error text-on-primary rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
+            >
+              {loading === 'delete' ? 'מוחק...' : 'מחק חשבון'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Save button */}

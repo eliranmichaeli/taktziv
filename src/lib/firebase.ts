@@ -12,9 +12,10 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  deleteUser,
   type User,
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import type { AppDB } from '../types';
 import { uiStore } from './session';
 
@@ -79,6 +80,26 @@ export const loadDB = async (uid: string): Promise<AppDB> => {
 
 export const saveDB = async (uid: string, data: AppDB): Promise<void> => {
   await setDoc(userDocRef(uid), JSON.parse(JSON.stringify(data)));
+};
+
+// ── Reset financial data (keep account, clear data, return to onboarding) ────
+export const resetFinancialData = async (uid: string): Promise<void> => {
+  const fresh = defaultDB();
+  // onboardingDone = false כדי שהמשתמש יחזור לשאלון הראשוני
+  await setDoc(userDocRef(uid), JSON.parse(JSON.stringify(fresh)));
+  uiStore.clearAll();
+};
+
+// ── Delete account permanently (data + auth user) ────────────────────────────
+export const deleteAccount = async (uid: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('No authenticated user');
+  // מחק את הנתונים מ-Firestore
+  await deleteDoc(userDocRef(uid));
+  // נקה את ה-store המקומי
+  uiStore.clearAll();
+  // מחק את המשתמש מ-Firebase Auth
+  await deleteUser(user);
 };
 
 // ── Auth ──────────────────────────────────────────────
