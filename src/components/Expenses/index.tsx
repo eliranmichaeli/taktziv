@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Pencil, Trash2, X, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, FileSpreadsheet, AlertCircle, Camera, Sparkles, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../../context/AppContext';
@@ -7,6 +7,7 @@ import { t } from '../../lib/i18n';
 import { fixedTotal, varTotal, varForMonth, getCurrencySymbol, today, uid } from '../../lib/calculations';
 import type { ScopeType, FixedExpense, VariableExpense, PaymentMethod, CreditCard } from '../../types';
 import { cn } from '../../lib/utils';
+import { auth } from '../../lib/firebase';
 
 // זיהוי מטבע מטקסט
 const detectCurrency = (text: string): string => {
@@ -16,8 +17,10 @@ const detectCurrency = (text: string): string => {
   return 'ILS';
 };
 
+const currencySymbol = (c: string) =>
+  c === 'USD' ? '$' : c === 'EUR' ? '€' : c === 'GBP' ? '£' : '₪';
+
 // ── Expense Row ───────────────────────────────────────
-const lang = 'he'; // fallback — נשאר כפי שהיה
 const ExpenseRow: React.FC<{
   name: string; category: string; amount: number; sym: string;
   sub?: string; note?: string;
@@ -145,14 +148,12 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
         </div>
 
         <div className="space-y-4">
-          {/* שם */}
           <div>
             <label className="text-xs font-medium text-on-surface-variant block mb-1.5">שם ההוצאה</label>
             <input className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
               placeholder="לדוגמה: חשמל, קניות סופר..." value={name} onChange={e => setName(e.target.value)} />
           </div>
 
-          {/* סכום + קטגוריה */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-on-surface-variant block mb-1.5">סכום ({sym})</label>
@@ -169,7 +170,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
             </div>
           </div>
 
-          {/* אמצעי תשלום */}
           <div>
             <label className="text-xs font-medium text-on-surface-variant block mb-1.5">אמצעי תשלום</label>
             <div className="grid grid-cols-3 gap-2">
@@ -188,7 +188,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
             </div>
           </div>
 
-          {/* אם אשראי — בחר כרטיס */}
           {payMethod === 'credit' && (
             <div>
               <label className="text-xs font-medium text-on-surface-variant block mb-1.5">כרטיס אשראי</label>
@@ -218,7 +217,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
             </div>
           )}
 
-          {/* אם הוראת קבע */}
           {payMethod === 'standing_order' && (
             <div className="space-y-3">
               <div>
@@ -238,7 +236,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
             </div>
           )}
 
-          {/* תאריך (רק הוצאה משתנה) */}
           {!isFixed && (
             <div>
               <label className="text-xs font-medium text-on-surface-variant block mb-1.5">תאריך</label>
@@ -247,7 +244,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
             </div>
           )}
 
-          {/* הערה */}
           <div>
             <label className="text-xs font-medium text-on-surface-variant block mb-1.5">הערה (אופציונלי)</label>
             <input className="w-full bg-surface-container-low border-0 rounded-xl px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/30"
@@ -267,13 +263,257 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
   );
 };
 
+// ── Image AI Recognition Modal ────────────────────────
+const ImageImportModal: React.FC<{
+  scope: ScopeType; isFixed: boolean; onClose: () => void;
+}> = ({ scope, isFixed, onClose }) => {
+  const { db, month, year, updateDB } = useApp();
+  const cats    = db.settings.cats[scope] || ['אחר'];
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  type ParsedRow = { name: string; amount: number; currency: string; selected: boolean };
+
+  const [preview,   setPreview]   = useState<ParsedRow[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [error,     setError]     = useState('');
+  const [imageUrl,  setImageUrl]  = useState('');
+
+  const analyzeImage = async (file: File) => {
+    setError('');
+    setPreview([]);
+
+    // הצג תצוגה מקדימה
+    const reader = new FileReader();
+    reader.onload = e => setImageUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setAnalyzing(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload  = () => resolve((r.result as string).split(',')[1]);
+        r.onerror = () => reject(new Error('שגיאה בקריאת הקובץ'));
+        r.readAsDataURL(file);
+      });
+
+      const mediaType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+      const idToken   = await auth.currentUser?.getIdToken(true);
+      if (!idToken) throw new Error('לא מחובר — אנא התחבר מחדש');
+
+      const resp = await fetch('/.netlify/functions/claude', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({
+          system: `אתה מערכת לזיהוי הוצאות מתמונות. המשתמש שולח תמונה של קבלה, חשבון, צילום מסך עסקה, או רשימת הוצאות.
+חלץ את כל ההוצאות/עסקאות מהתמונה והחזר JSON בלבד ללא שום טקסט נוסף:
+{"expenses":[{"name":"שם ההוצאה","amount":100,"currency":"ILS"}]}
+כללים:
+- name: שם קצר וברור בעברית
+- amount: מספר חיובי בלבד
+- currency: ILS/USD/EUR/GBP לפי מה שמופיע, ברירת מחדל ILS
+- אם אין הוצאות ברורות: {"expenses":[],"error":"לא זוהו הוצאות בתמונה"}`,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+              { type: 'text', text: 'זהה את כל ההוצאות בתמונה.' },
+            ],
+          }],
+          max_tokens: 1000,
+        }),
+      });
+
+      const data = await resp.json() as any;
+      if (!resp.ok) throw new Error(data.error || 'שגיאה בניתוח התמונה');
+
+      const text   = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(text);
+
+      if (parsed.error || !parsed.expenses?.length) {
+        setError(parsed.error || 'לא זוהו הוצאות. נסה תמונה ברורה יותר.');
+        return;
+      }
+      setPreview(parsed.expenses.map((e: any) => ({ ...e, selected: true })));
+    } catch (e: any) {
+      setError(e.message || 'שגיאה בניתוח התמונה. נסה שוב.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const toggleRow = (i: number) =>
+    setPreview(prev => prev.map((r, idx) => idx === i ? { ...r, selected: !r.selected } : r));
+
+  const handleImport = async () => {
+    const selected = preview.filter(r => r.selected);
+    if (!selected.length) return;
+    setImporting(true);
+    try {
+      if (isFixed) {
+        const entries: FixedExpense[] = selected.map(row => ({
+          id: uid(), name: row.name, amount: row.amount,
+          currency: row.currency, category: cats[0] || 'אחר', type: scope,
+        }));
+        await updateDB(d => ({
+          ...d,
+          fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] },
+        }));
+      } else {
+        const entries = selected.map(row => ({
+          id: uid(), name: row.name, amount: row.amount,
+          currency: row.currency, category: cats[0] || 'אחר',
+          type: scope, month, year, date: today(),
+        }));
+        await updateDB(d => ({ ...d, variable: [...(d.variable || []), ...entries] }));
+      }
+      onClose();
+    } catch {
+      setError('שגיאה בשמירה. נסה שוב.');
+      setImporting(false);
+    }
+  };
+
+  const selectedCount = preview.filter(r => r.selected).length;
+  const allSelected   = preview.length > 0 && preview.every(r => r.selected);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="w-full md:max-w-lg bg-surface rounded-t-[1.5rem] md:rounded-[1.5rem] p-6 border border-outline-variant/10 shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Sparkles size={20} className="text-primary" />
+            זיהוי הוצאות מתמונה · AI
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
+        </div>
+
+        <div className="bg-primary/5 border border-primary/15 rounded-xl p-3.5 mb-4">
+          <p className="text-xs text-on-surface leading-relaxed">
+            העלה <span className="font-bold">קבלה, חשבון, או צילום מסך עסקה</span> — ה-AI יזהה אוטומטית את שמות ההוצאות והסכומים.
+          </p>
+        </div>
+
+        {/* אזור העלאה */}
+        {!imageUrl && (
+          <div
+            onClick={() => fileRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) analyzeImage(f); }}
+            className="border-2 border-dashed border-outline-variant/30 hover:border-primary/50 rounded-xl p-8 text-center cursor-pointer transition-all mb-4 group"
+          >
+            <Camera size={36} className="mx-auto mb-3 text-on-surface-variant group-hover:text-primary transition-colors" />
+            <p className="font-medium text-on-surface">לחץ לבחירת תמונה</p>
+            <p className="text-xs text-on-surface-variant mt-1">או גרור לכאן · JPG, PNG, WEBP</p>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
+              onChange={e => e.target.files?.[0] && analyzeImage(e.target.files[0])} />
+          </div>
+        )}
+
+        {/* תצוגת תמונה */}
+        {imageUrl && (
+          <div className="mb-4">
+            <div className="relative rounded-xl overflow-hidden border border-outline-variant/10 mb-2">
+              <img src={imageUrl} alt="תמונה שהועלתה" className="w-full max-h-48 object-contain bg-surface-container-low" />
+              {analyzing && (
+                <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-white text-xs font-medium">מנתח עם AI...</p>
+                </div>
+              )}
+            </div>
+            {!analyzing && (
+              <button
+                onClick={() => { setImageUrl(''); setPreview([]); setError(''); }}
+                className="text-xs text-primary hover:underline"
+              >
+                החלף תמונה
+              </button>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-error/8 border border-error/20 rounded-xl mb-4">
+            <AlertCircle size={14} className="text-error flex-shrink-0" />
+            <p className="text-xs text-error">{error}</p>
+          </div>
+        )}
+
+        {/* תצוגה מקדימה עם checkboxes */}
+        {preview.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-on-surface-variant">זוהו {preview.length} הוצאות — סמן מה לייבא:</p>
+              <button
+                onClick={() => setPreview(prev => prev.map(r => ({ ...r, selected: !allSelected })))}
+                className="text-[10px] text-primary hover:underline"
+              >
+                {allSelected ? 'בטל הכל' : 'בחר הכל'}
+              </button>
+            </div>
+            <div className="space-y-1.5 max-h-52 overflow-y-auto rounded-xl border border-outline-variant/10 p-2">
+              {preview.map((row, i) => (
+                <div
+                  key={i}
+                  onClick={() => toggleRow(i)}
+                  className={cn(
+                    'flex items-center justify-between py-2.5 px-3 rounded-lg text-xs cursor-pointer transition-all',
+                    row.selected
+                      ? 'bg-primary/8 border border-primary/20'
+                      : 'bg-surface-container-low border border-transparent opacity-50'
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn(
+                      'w-4 h-4 rounded flex items-center justify-center border transition-all flex-shrink-0',
+                      row.selected ? 'bg-primary border-primary' : 'border-outline-variant/40'
+                    )}>
+                      {row.selected && <CheckCircle2 size={11} className="text-on-primary" />}
+                    </div>
+                    <span className="text-on-surface font-medium">{row.name}</span>
+                  </div>
+                  <span className={cn('font-bold flex-shrink-0 ms-2', row.selected ? 'text-error' : 'text-on-surface-variant')}>
+                    −{currencySymbol(row.currency)}{row.amount.toLocaleString('he-IL')}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-on-surface-variant mt-1.5 text-center">
+              ההוצאות יסווגו תחת הקטגוריה הראשונה — ניתן לשנות לאחר הייבוא
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">ביטול</button>
+          <button
+            onClick={handleImport}
+            disabled={selectedCount === 0 || importing || analyzing}
+            className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50"
+          >
+            {importing ? 'מייבא...' : selectedCount > 0 ? `ייבא ${selectedCount} הוצאות` : 'בחר הוצאות'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // ── Excel Import Modal ────────────────────────────────
 const ExcelImportModal: React.FC<{
   scope: ScopeType; isFixed: boolean; onClose: () => void;
 }> = ({ scope, isFixed, onClose }) => {
   const { db, month, year, updateDB } = useApp();
-  const sym  = getCurrencySymbol(db);
-  const cats = db.settings.cats[scope] || ['אחר'];
+  const cats    = db.settings.cats[scope] || ['אחר'];
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [preview,   setPreview]   = useState<{ name: string; amount: number; currency: string }[]>([]);
@@ -292,36 +532,26 @@ const ExcelImportModal: React.FC<{
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
       const parsed: { name: string; amount: number; currency: string }[] = [];
-
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length < 2) continue;
-
         const nameVal   = String(row[0] ?? '').trim();
         const amountRaw = String(row[1] ?? '').trim();
-
         if (!nameVal || !amountRaw) continue;
-
-        // נסה לחלץ סכום
         const amountNum = parseFloat(amountRaw.replace(/[^0-9.-]/g, ''));
         if (isNaN(amountNum) || amountNum <= 0) continue;
-
-        const currency = detectCurrency(amountRaw + ' ' + nameVal);
-        parsed.push({ name: nameVal, amount: amountNum, currency });
+        parsed.push({ name: nameVal, amount: amountNum, currency: detectCurrency(amountRaw + ' ' + nameVal) });
       }
 
-      if (parsed.length === 0) {
-        setError('לא נמצאו נתונים תקינים. וודא שיש 2 עמודות: שם ההוצאה וסכום.');
-        return;
-      }
+      if (!parsed.length) { setError('לא נמצאו נתונים תקינים. וודא שיש 2 עמודות: שם הוצאה וסכום.'); return; }
       setPreview(parsed);
-    } catch (e) {
+    } catch {
       setError('שגיאה בקריאת הקובץ — וודא שזה קובץ Excel תקין (.xlsx / .xls)');
     }
   };
 
   const handleImport = async () => {
-    if (preview.length === 0) return;
+    if (!preview.length) return;
     setImporting(true);
     try {
       if (isFixed) {
@@ -329,10 +559,7 @@ const ExcelImportModal: React.FC<{
           id: uid(), name: row.name, amount: row.amount,
           currency: row.currency, category: cats[0] || 'אחר', type: scope,
         }));
-        await updateDB(d => ({
-          ...d,
-          fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] },
-        }));
+        await updateDB(d => ({ ...d, fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] } }));
       } else {
         const entries = preview.map(row => ({
           id: uid(), name: row.name, amount: row.amount,
@@ -342,14 +569,11 @@ const ExcelImportModal: React.FC<{
         await updateDB(d => ({ ...d, variable: [...(d.variable || []), ...entries] }));
       }
       onClose();
-    } catch (e) {
-      setError('שגיאה בייבוא הנתונים. אנא נסה שוב.');
+    } catch {
+      setError('שגיאה בייבוא. נסה שוב.');
       setImporting(false);
     }
   };
-
-  const currencySymbol = (c: string) =>
-    c === 'USD' ? '$' : c === 'EUR' ? '€' : c === 'GBP' ? '£' : '₪';
 
   return (
     <motion.div
@@ -370,17 +594,14 @@ const ExcelImportModal: React.FC<{
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
 
-        {/* הוראות */}
         <div className="bg-surface-container-low rounded-xl p-4 mb-4 border border-outline-variant/8">
           <p className="text-xs font-bold text-on-surface mb-2">מבנה הקובץ הנדרש:</p>
           <div className="grid grid-cols-2 gap-2 text-xs text-center">
             <div className="bg-primary/8 rounded-lg p-2.5 font-bold text-primary">עמודה א׳<br /><span className="font-normal opacity-80">שם ההוצאה</span></div>
             <div className="bg-primary/8 rounded-lg p-2.5 font-bold text-primary">עמודה ב׳<br /><span className="font-normal opacity-80">סכום (₪ / $ / €)</span></div>
           </div>
-          <p className="text-[10px] text-on-surface-variant mt-2 text-center">המטבע מזוהה אוטומטית מהסמל שבתא · ניתן לכלול כותרת בשורה הראשונה</p>
         </div>
 
-        {/* העלאת קובץ */}
         <div
           onClick={() => fileRef.current?.click()}
           onDragOver={e => e.preventDefault()}
@@ -389,7 +610,7 @@ const ExcelImportModal: React.FC<{
         >
           <Upload size={32} className="mx-auto mb-3 text-on-surface-variant group-hover:text-primary transition-colors" />
           <p className="font-medium text-on-surface">לחץ לבחירת קובץ Excel</p>
-          <p className="text-xs text-on-surface-variant mt-1">או גרור לכאן · תומך ב-.xlsx ו-.xls</p>
+          <p className="text-xs text-on-surface-variant mt-1">או גרור לכאן · .xlsx ו-.xls</p>
           {fileName && <p className="text-xs text-primary mt-2 font-bold">✓ {fileName}</p>}
           <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden"
             onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
@@ -402,12 +623,9 @@ const ExcelImportModal: React.FC<{
           </div>
         )}
 
-        {/* תצוגה מקדימה */}
         {preview.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-bold text-on-surface-variant mb-2">
-              תצוגה מקדימה — {preview.length} הוצאות יתווספו:
-            </p>
+            <p className="text-xs font-bold text-on-surface-variant mb-2">תצוגה מקדימה — {preview.length} הוצאות:</p>
             <div className="max-h-52 overflow-y-auto space-y-1 rounded-xl border border-outline-variant/10 p-2">
               {preview.map((row, i) => (
                 <div key={i} className="flex justify-between items-center py-2 px-3 bg-surface-container-low rounded-lg text-xs">
@@ -418,15 +636,12 @@ const ExcelImportModal: React.FC<{
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-on-surface-variant mt-1.5 text-center">
-              כל ההוצאות יסווגו תחת הקטגוריה הראשונה. ניתן לשנות לאחר הייבוא.
-            </p>
           </div>
         )}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 bg-surface-container-high text-on-surface rounded-xl font-medium text-sm">ביטול</button>
-          <button onClick={handleImport} disabled={preview.length === 0 || importing}
+          <button onClick={handleImport} disabled={!preview.length || importing}
             className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm disabled:opacity-50">
             {importing ? 'מייבא...' : `ייבא ${preview.length} הוצאות`}
           </button>
@@ -445,12 +660,13 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
   const totalF = fixedTotal(db, scope);
   const totalV = varTotal(db, scope, month, year);
   const p      = db.settings.profile;
-  const label  = scope === 'personal'  ? (p.name || t(lang,'personal'))
+  const label  = scope === 'personal'  ? (p.name || t(lang, 'personal'))
                : scope === 'personal2' ? ((p as any).partnerName || 'משתמש 2')
-               : t(lang,'family');
+               : t(lang, 'family');
 
   const [modal,      setModal]      = useState<{ isFixed: boolean; item?: any } | null>(null);
   const [excelModal, setExcelModal] = useState<{ isFixed: boolean } | null>(null);
+  const [imageModal, setImageModal] = useState<{ isFixed: boolean } | null>(null);
 
   const deleteFixed = (id: string) => {
     if (!confirm('למחוק הוצאה קבועה זו?')) return;
@@ -462,12 +678,18 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
   };
 
   const ActionButtons = ({ isFixed }: { isFixed: boolean }) => (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap justify-end">
+      <button
+        onClick={() => setImageModal({ isFixed })}
+        className="flex items-center gap-1.5 px-3 py-2 bg-primary/5 text-primary border border-primary/20 rounded-xl text-xs font-medium hover:bg-primary/10 transition-all"
+      >
+        <Sparkles size={13} /> זיהוי תמונה
+      </button>
       <button
         onClick={() => setExcelModal({ isFixed })}
-        className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant border border-outline-variant/20 rounded-xl text-xs font-medium hover:bg-surface-container-highest hover:text-primary hover:border-primary/30 transition-all"
+        className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant border border-outline-variant/20 rounded-xl text-xs font-medium hover:bg-surface-container-highest transition-all"
       >
-        <FileSpreadsheet size={14} /> ייבוא Excel
+        <FileSpreadsheet size={13} /> Excel
       </button>
       <button
         onClick={() => setModal({ isFixed })}
@@ -484,10 +706,10 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
       <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5">
         <div className="flex items-center justify-between p-6 border-b border-outline-variant/8 flex-wrap gap-3">
           <div>
-            <h2 className="text-base font-bold">{t(lang,'fixedExpenses')}</h2>
+            <h2 className="text-base font-bold">{t(lang, 'fixedExpenses')}</h2>
             <div className="text-xs text-on-surface-variant mt-0.5">{label} · חוזר חודשי</div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-end">
             <span className="text-on-surface-variant text-sm font-medium">{sym}{Math.round(totalF).toLocaleString('he-IL')} סה"כ</span>
             <ActionButtons isFixed={true} />
           </div>
@@ -509,10 +731,10 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
       <div className="bg-surface-container-low rounded-2xl border border-outline-variant/5">
         <div className="flex items-center justify-between p-6 border-b border-outline-variant/8 flex-wrap gap-3">
           <div>
-            <h2 className="text-base font-bold">{t(lang,'variableExpenses')}</h2>
+            <h2 className="text-base font-bold">{t(lang, 'variableExpenses')}</h2>
             <div className="text-xs text-on-surface-variant mt-0.5">{label} · החודש</div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-end">
             <span className="text-on-surface-variant text-sm font-medium">{sym}{Math.round(totalV).toLocaleString('he-IL')} סה"כ</span>
             <ActionButtons isFixed={false} />
           </div>
@@ -538,6 +760,9 @@ export const Expenses: React.FC<{ scope: ScopeType }> = ({ scope }) => {
         )}
         {excelModal && (
           <ExcelImportModal scope={scope} isFixed={excelModal.isFixed} onClose={() => setExcelModal(null)} />
+        )}
+        {imageModal && (
+          <ImageImportModal scope={scope} isFixed={imageModal.isFixed} onClose={() => setImageModal(null)} />
         )}
       </AnimatePresence>
     </div>
