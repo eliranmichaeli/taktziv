@@ -297,44 +297,24 @@ const ImageImportModal: React.FC<{
         r.readAsDataURL(file);
       });
 
-      const mediaType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-      const idToken   = await auth.currentUser?.getIdToken(true);
+      const idToken = await auth.currentUser?.getIdToken(true);
       if (!idToken) throw new Error('לא מחובר — אנא התחבר מחדש');
 
-      const resp = await fetch('/.netlify/functions/claude', {
+      // שלח ל-Google Vision דרך Netlify Function
+      const resp = await fetch('/.netlify/functions/vision', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-        body: JSON.stringify({
-          system: `אתה מערכת לזיהוי הוצאות מתמונות. המשתמש שולח תמונה של קבלה, חשבון, צילום מסך עסקה, או רשימת הוצאות.
-חלץ את כל ההוצאות/עסקאות מהתמונה והחזר JSON בלבד ללא שום טקסט נוסף:
-{"expenses":[{"name":"שם ההוצאה","amount":100,"currency":"ILS"}]}
-כללים:
-- name: שם קצר וברור בעברית
-- amount: מספר חיובי בלבד
-- currency: ILS/USD/EUR/GBP לפי מה שמופיע, ברירת מחדל ILS
-- אם אין הוצאות ברורות: {"expenses":[],"error":"לא זוהו הוצאות בתמונה"}`,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: 'זהה את כל ההוצאות בתמונה.' },
-            ],
-          }],
-          max_tokens: 1000,
-        }),
+        body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
       });
 
       const data = await resp.json() as any;
       if (!resp.ok) throw new Error(data.error || 'שגיאה בניתוח התמונה');
 
-      const text   = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(text);
-
-      if (parsed.error || !parsed.expenses?.length) {
-        setError(parsed.error || 'לא זוהו הוצאות. נסה תמונה ברורה יותר.');
+      if (data.error || !data.expenses?.length) {
+        setError(data.error || 'לא זוהו הוצאות. נסה תמונה ברורה יותר עם טקסט קריא.');
         return;
       }
-      setPreview(parsed.expenses.map((e: any) => ({ ...e, selected: true })));
+      setPreview(data.expenses.map((e: any) => ({ ...e, selected: true })));
     } catch (e: any) {
       setError(e.message || 'שגיאה בניתוח התמונה. נסה שוב.');
     } finally {
