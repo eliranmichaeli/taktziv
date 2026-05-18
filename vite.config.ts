@@ -21,7 +21,6 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   build: {
-    // Warn if any chunk exceeds 600kb (helps catch accidental bundle bloat)
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
