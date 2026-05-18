@@ -316,7 +316,7 @@ const ImageImportModal: React.FC<{
     setAnalyzing(true);
     try {
       // Tesseract.js — חינמי, רץ בדפדפן, תומך עברית ואנגלית
-      const { createWorker } = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js' as any);
+      const { createWorker } = await import('tesseract.js');
       const worker = await createWorker(['heb', 'eng']);
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
