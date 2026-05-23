@@ -264,6 +264,32 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ type, isFixed, existi
 };
 
 // ── Image AI Recognition Modal ────────────────────────
+// OCR מזהה סכומים בלבד; המשתמש עורך שם + קטגוריה לפני ייבוא
+
+// סיווג אוטומטי לפי מילות מפתח
+function guessCategory(name: string, cats: string[]): string {
+  const n = name.toLowerCase();
+  const rules: [string[], string[]][] = [
+    [['סופר','מזון','אוכל','מכולת','שוק','רסטורנט','מסעדה','קפה','coffee','food','market','super'], ['מזון','אוכל','קניות','מכולת']],
+    [['חשמל','גז','מים','ארנונה','ועד','דירה','שכירות','משכנתא','rent','electric'], ['דיור','שכר דירה','משכנתא','ארנונה','חשמל','מים']],
+    [['רכב','דלק','ביטוח','תחבורה','אוטובוס','רכבת','אובר','taxi','fuel','car'], ['תחבורה','רכב','דלק']],
+    [['בריאות','רופא','רפואה','תרופה','קופת','מרפאה','בית חולים','health','pharmacy'], ['בריאות','רפואה','תרופות']],
+    [['ביגוד','בגד','נעל','אופנה','cloth','fashion','shoe'], ['ביגוד','קניות']],
+    [['בידור','קולנוע','נטפליקס','ספוטיפיי','גיים','netflix','spotify','entertainment'], ['בידור','מנויים']],
+    [['חינוך','לימוד','קורס','גן','חוג','school','education'], ['חינוך','ילדים']],
+    [['תקשורת','סלולר','אינטרנט','phone','internet','mobile'], ['תקשורת','סלולר']],
+  ];
+  for (const [keywords, catNames] of rules) {
+    if (keywords.some(k => n.includes(k))) {
+      for (const cn of catNames) {
+        const found = cats.find(c => c.includes(cn) || cn.includes(c));
+        if (found) return found;
+      }
+    }
+  }
+  return cats[0] || 'אחר';
+}
+
 const ImageImportModal: React.FC<{
   scope: ScopeType; isFixed: boolean; onClose: () => void;
 }> = ({ scope, isFixed, onClose }) => {
@@ -271,22 +297,26 @@ const ImageImportModal: React.FC<{
   const cats    = db.settings.cats[scope] || ['אחר'];
   const fileRef = useRef<HTMLInputElement>(null);
 
-  type ParsedRow = { name: string; amount: number; currency: string; selected: boolean };
+  type EditableRow = {
+    name: string; amount: number; currency: string;
+    category: string; selected: boolean;
+  };
 
-  const [preview,   setPreview]   = useState<ParsedRow[]>([]);
+  const [rows,      setRows]      = useState<EditableRow[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error,     setError]     = useState('');
   const [imageUrl,  setImageUrl]  = useState('');
 
+  const updateRow = (i: number, patch: Partial<EditableRow>) =>
+    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+
   const analyzeImage = async (file: File) => {
     setError('');
-    setPreview([]);
-
+    setRows([]);
     const reader = new FileReader();
     reader.onload = e => setImageUrl(e.target?.result as string);
     reader.readAsDataURL(file);
-
     setAnalyzing(true);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -295,52 +325,53 @@ const ImageImportModal: React.FC<{
         r.onerror = () => reject(new Error('שגיאה בקריאת הקובץ'));
         r.readAsDataURL(file);
       });
-
       const idToken = await auth.currentUser?.getIdToken(true);
-      if (!idToken) throw new Error('לא מחובר — אנא התחבר מחדש');
-
+      if (!idToken) throw new Error('לא מחובר');
       const resp = await fetch('/.netlify/functions/vision', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
         body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
       });
-
       const data = await resp.json() as any;
-      if (!resp.ok) throw new Error(data.error || 'שגיאה בניתוח התמונה');
-
-      if (data.error || !data.expenses?.length) {
-        setError(data.error || 'לא זוהו הוצאות. וודא שהתמונה מכילה שמות וסכומים ברורים.');
+      if (!resp.ok) throw new Error(data.error || 'שגיאה');
+      if (!data.expenses?.length) {
+        setError('זוהו סכומים אך לא שמות — אנא ערוך ידנית את השמות בטבלה למטה.');
+        // עדיין מציג שורות עם שם ריק לעריכה
+        if (data.amounts?.length) {
+          setRows(data.amounts.map((a: any) => ({
+            name: '', amount: a.amount, currency: a.currency || 'ILS',
+            category: cats[0] || 'אחר', selected: true,
+          })));
+        }
         return;
       }
-      setPreview(data.expenses.map((e: any) => ({ ...e, selected: true })));
+      setRows(data.expenses.map((e: any) => ({
+        name: e.name, amount: e.amount, currency: e.currency || 'ILS',
+        category: guessCategory(e.name, cats),
+        selected: true,
+      })));
     } catch (e: any) {
-      setError(e.message || 'שגיאה בניתוח התמונה. נסה שוב.');
+      setError(e.message || 'שגיאה בניתוח. נסה שוב.');
     } finally {
       setAnalyzing(false);
     }
   };
 
-    const toggleRow = (i: number) =>
-    setPreview(prev => prev.map((r, idx) => idx === i ? { ...r, selected: !r.selected } : r));
-
   const handleImport = async () => {
-    const selected = preview.filter(r => r.selected);
+    const selected = rows.filter(r => r.selected && r.amount > 0);
     if (!selected.length) return;
     setImporting(true);
     try {
       if (isFixed) {
         const entries: FixedExpense[] = selected.map(row => ({
-          id: uid(), name: row.name, amount: row.amount,
-          currency: row.currency, category: cats[0] || 'אחר', type: scope,
+          id: uid(), name: row.name || 'הוצאה', amount: row.amount,
+          currency: row.currency, category: row.category, type: scope,
         }));
-        await updateDB(d => ({
-          ...d,
-          fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] },
-        }));
+        await updateDB(d => ({ ...d, fixed: { ...d.fixed, [scope]: [...(d.fixed[scope] || []), ...entries] } }));
       } else {
         const entries = selected.map(row => ({
-          id: uid(), name: row.name, amount: row.amount,
-          currency: row.currency, category: cats[0] || 'אחר',
+          id: uid(), name: row.name || 'הוצאה', amount: row.amount,
+          currency: row.currency, category: row.category,
           type: scope, month, year, date: today(),
         }));
         await updateDB(d => ({ ...d, variable: [...(d.variable || []), ...entries] }));
@@ -352,8 +383,7 @@ const ImageImportModal: React.FC<{
     }
   };
 
-  const selectedCount = preview.filter(r => r.selected).length;
-  const allSelected   = preview.length > 0 && preview.every(r => r.selected);
+  const selectedCount = rows.filter(r => r.selected).length;
 
   return (
     <motion.div
@@ -364,19 +394,21 @@ const ImageImportModal: React.FC<{
       <motion.div
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="w-full md:max-w-lg bg-surface rounded-t-[1.5rem] md:rounded-[1.5rem] p-6 border border-outline-variant/10 shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="w-full md:max-w-2xl bg-surface rounded-t-[1.5rem] md:rounded-[1.5rem] p-6 border border-outline-variant/10 shadow-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Sparkles size={20} className="text-primary" />
-            זיהוי הוצאות מתמונה · AI
+            זיהוי הוצאות מתמונה
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
         </div>
 
+        {/* הסבר */}
         <div className="bg-primary/5 border border-primary/15 rounded-xl p-3.5 mb-4">
           <p className="text-xs text-on-surface leading-relaxed">
-            העלה <span className="font-bold">קבלה, חשבון, או צילום מסך עסקה</span> — ה-AI יזהה אוטומטית את שמות ההוצאות והסכומים.
+            העלה תמונה עם <span className="font-bold">שמות וסכומים</span> — הסכומים יזוהו אוטומטית.<br/>
+            <span className="text-on-surface-variant">ניתן לערוך שם, קטגוריה וסכום לפני הייבוא.</span>
           </p>
         </div>
 
@@ -396,23 +428,21 @@ const ImageImportModal: React.FC<{
           </div>
         )}
 
-        {/* תצוגת תמונה */}
+        {/* תמונה */}
         {imageUrl && (
           <div className="mb-4">
             <div className="relative rounded-xl overflow-hidden border border-outline-variant/10 mb-2">
-              <img src={imageUrl} alt="תמונה שהועלתה" className="w-full max-h-48 object-contain bg-surface-container-low" />
+              <img src={imageUrl} alt="תמונה" className="w-full max-h-36 object-contain bg-surface-container-low" />
               {analyzing && (
                 <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-2">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-white text-xs font-medium">מנתח עם AI...</p>
+                  <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-white text-xs">מנתח סכומים...</p>
                 </div>
               )}
             </div>
             {!analyzing && (
-              <button
-                onClick={() => { setImageUrl(''); setPreview([]); setError(''); }}
-                className="text-xs text-primary hover:underline"
-              >
+              <button onClick={() => { setImageUrl(''); setRows([]); setError(''); }}
+                className="text-xs text-primary hover:underline">
                 החלף תמונה
               </button>
             )}
@@ -420,53 +450,73 @@ const ImageImportModal: React.FC<{
         )}
 
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-error/8 border border-error/20 rounded-xl mb-4">
-            <AlertCircle size={14} className="text-error flex-shrink-0" />
+          <div className="flex items-start gap-2 p-3 bg-error/8 border border-error/20 rounded-xl mb-4">
+            <AlertCircle size={14} className="text-error flex-shrink-0 mt-0.5" />
             <p className="text-xs text-error">{error}</p>
           </div>
         )}
 
-        {/* תצוגה מקדימה עם checkboxes */}
-        {preview.length > 0 && (
+        {/* טבלת עריכה */}
+        {rows.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold text-on-surface-variant">זוהו {preview.length} הוצאות — סמן מה לייבא:</p>
+              <p className="text-xs font-bold text-on-surface-variant">ערוך ואשר לפני ייבוא:</p>
               <button
-                onClick={() => setPreview(prev => prev.map(r => ({ ...r, selected: !allSelected })))}
+                onClick={() => setRows(prev => { const all = prev.every(r => r.selected); return prev.map(r => ({ ...r, selected: !all })); })}
                 className="text-[10px] text-primary hover:underline"
               >
-                {allSelected ? 'בטל הכל' : 'בחר הכל'}
+                {rows.every(r => r.selected) ? 'בטל הכל' : 'בחר הכל'}
               </button>
             </div>
-            <div className="space-y-1.5 max-h-52 overflow-y-auto rounded-xl border border-outline-variant/10 p-2">
-              {preview.map((row, i) => (
-                <div
-                  key={i}
-                  onClick={() => toggleRow(i)}
-                  className={cn(
-                    'flex items-center justify-between py-2.5 px-3 rounded-lg text-xs cursor-pointer transition-all',
-                    row.selected
-                      ? 'bg-primary/8 border border-primary/20'
-                      : 'bg-surface-container-low border border-transparent opacity-50'
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className={cn(
-                      'w-4 h-4 rounded flex items-center justify-center border transition-all flex-shrink-0',
-                      row.selected ? 'bg-primary border-primary' : 'border-outline-variant/40'
-                    )}>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {rows.map((row, i) => (
+                <div key={i} className={cn(
+                  'p-3 rounded-xl border transition-all',
+                  row.selected ? 'bg-primary/5 border-primary/20' : 'bg-surface-container-low border-transparent opacity-50'
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {/* checkbox */}
+                    <button onClick={() => updateRow(i, { selected: !row.selected })}
+                      className={cn('w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-all',
+                        row.selected ? 'bg-primary border-primary' : 'border-outline-variant/40')}>
                       {row.selected && <CheckCircle2 size={11} className="text-on-primary" />}
-                    </div>
-                    <span className="text-on-surface font-medium">{row.name}</span>
+                    </button>
+
+                    {/* שם */}
+                    <input
+                      className="flex-1 bg-surface-container-low border-0 rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:ring-1 focus:ring-primary/30 min-w-0"
+                      placeholder="שם ההוצאה (ערוך ידנית)"
+                      value={row.name}
+                      onChange={e => updateRow(i, { name: e.target.value })}
+                    />
+
+                    {/* סכום */}
+                    <input
+                      type="number"
+                      className="w-20 bg-surface-container-low border-0 rounded-lg px-2.5 py-1.5 text-xs text-error font-bold focus:ring-1 focus:ring-primary/30"
+                      value={row.amount}
+                      onChange={e => updateRow(i, { amount: parseFloat(e.target.value) || 0 })}
+                    />
                   </div>
-                  <span className={cn('font-bold flex-shrink-0 ms-2', row.selected ? 'text-error' : 'text-on-surface-variant')}>
-                    −{currencySymbol(row.currency)}{row.amount.toLocaleString('he-IL')}
-                  </span>
+
+                  {/* קטגוריה */}
+                  <div className="flex items-center gap-2 mr-6">
+                    <span className="text-[10px] text-on-surface-variant flex-shrink-0">קטגוריה:</span>
+                    <select
+                      className="flex-1 bg-surface-container-low border-0 rounded-lg px-2 py-1 text-xs text-on-surface focus:ring-1 focus:ring-primary/30"
+                      value={row.category}
+                      onChange={e => updateRow(i, { category: e.target.value })}
+                    >
+                      {cats.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-on-surface-variant mt-1.5 text-center">
-              ההוצאות יסווגו תחת הקטגוריה הראשונה — ניתן לשנות לאחר הייבוא
+
+            <p className="text-[10px] text-on-surface-variant mt-2 text-center">
+              עברית לא מזוהה אוטומטית — ערוך את שמות ההוצאות ידנית
             </p>
           </div>
         )}
