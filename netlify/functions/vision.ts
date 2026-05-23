@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
     // קריאה ל-OCR.space
     const formData = new URLSearchParams();
     formData.append('base64Image', dataUri);
-    formData.append('language',   'isr');        // עברית ב-OCR.space
+    formData.append('language',   'eng');        // eng עובד תמיד, מספרים מזוהים בכל מקרה
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation',  'true');
     formData.append('scale',              'true');
