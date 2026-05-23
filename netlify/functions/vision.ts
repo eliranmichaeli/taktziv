@@ -69,27 +69,30 @@ export const handler: Handler = async (event) => {
     const mimeType = body.mimeType || 'image/jpeg';
     const dataUri  = `data:${mimeType};base64,${body.image}`;
 
-    // קריאה ל-OCR.space
-    const formData = new URLSearchParams();
-    formData.append('base64Image', dataUri);
-    formData.append('language',   'eng');        // eng עובד תמיד, מספרים מזוהים בכל מקרה
-    formData.append('isOverlayRequired', 'false');
-    formData.append('detectOrientation',  'true');
-    formData.append('scale',              'true');
-    formData.append('isTable',            'true'); // מצוין לטבלאות Excel
+    // קריאה ל-OCR.space — שתי שפות במקביל: עברית ואנגלית
+    const callOCR = async (lang: string) => {
+      const fd = new URLSearchParams();
+      fd.append('base64Image', dataUri);
+      fd.append('language',   lang);
+      fd.append('isOverlayRequired', 'false');
+      fd.append('detectOrientation',  'true');
+      fd.append('scale',              'true');
+      fd.append('isTable',            'true');
+      const res = await fetch('https://api.ocr.space/parse/image', {
+        method:  'POST',
+        headers: { 'apikey': ocrKey, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: fd.toString(),
+      });
+      return res.json() as Promise<any>;
+    };
 
-    const ocrResp = await fetch('https://api.ocr.space/parse/image', {
-      method:  'POST',
-      headers: {
-        'apikey':       ocrKey,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
-    });
+    // נסה עברית קודם, אם נכשל — אנגלית
+    let ocrData = await callOCR('isr');
+    if (ocrData.IsErroredOnProcessing || !ocrData.ParsedResults?.[0]?.ParsedText?.trim()) {
+      ocrData = await callOCR('eng');
+    }
 
-    const ocrData = await ocrResp.json() as any;
-
-    if (!ocrResp.ok || ocrData.IsErroredOnProcessing) {
+    if (ocrData.IsErroredOnProcessing) {
       const msg = ocrData?.ErrorMessage?.[0] || 'שגיאה ב-OCR';
       return { statusCode: 502, headers: cors, body: JSON.stringify({ error: msg }) };
     }
