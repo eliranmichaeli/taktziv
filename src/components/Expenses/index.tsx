@@ -279,65 +279,48 @@ const ImageImportModal: React.FC<{
   const [error,     setError]     = useState('');
   const [imageUrl,  setImageUrl]  = useState('');
 
-  // חלץ הוצאות מטקסט OCR
-  const parseExpensesFromText = (text: string): { name: string; amount: number; currency: string }[] => {
-    const lines   = text.split('\n').map(l => l.trim()).filter(Boolean);
-    const results: { name: string; amount: number; currency: string }[] = [];
-    const seen    = new Set<string>();
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const amountMatch = line.match(/([\d,]+(?:\.\d{1,2})?)/);
-      if (!amountMatch) continue;
-      const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-      if (isNaN(amount) || amount < 1 || amount > 999999) continue;
-      let currency = 'ILS';
-      if (line.includes('$') || /usd/i.test(line)) currency = 'USD';
-      else if (line.includes('€') || /eur/i.test(line)) currency = 'EUR';
-      else if (line.includes('£') || /gbp/i.test(line)) currency = 'GBP';
-      let name = line.replace(amountMatch[0], '').replace(/[₪$€£:\-–|.,]/g, '').trim();
-      if (!name || name.length < 2) {
-        name = i > 0 ? lines[i - 1].replace(/[0-9₪$€£:\-–|.,]/g, '').trim() : '';
-      }
-      if (!name || name.length < 2) continue;
-      const key = name + '-' + amount;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      results.push({ name, amount, currency });
-    }
-    return results;
-  };
-
   const analyzeImage = async (file: File) => {
     setError('');
     setPreview([]);
+
     const reader = new FileReader();
     reader.onload = e => setImageUrl(e.target?.result as string);
     reader.readAsDataURL(file);
+
     setAnalyzing(true);
     try {
-      // Tesseract.js — חינמי, רץ בדפדפן, תומך עברית ואנגלית
-      const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker(['heb', 'eng']);
-      const { data: { text } } = await worker.recognize(file);
-      await worker.terminate();
-      if (!text || text.trim().length < 3) {
-        setError('לא זוהה טקסט בתמונה — נסה תמונה ברורה יותר.');
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload  = () => resolve((r.result as string).split(',')[1]);
+        r.onerror = () => reject(new Error('שגיאה בקריאת הקובץ'));
+        r.readAsDataURL(file);
+      });
+
+      const idToken = await auth.currentUser?.getIdToken(true);
+      if (!idToken) throw new Error('לא מחובר — אנא התחבר מחדש');
+
+      const resp = await fetch('/.netlify/functions/vision', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
+      });
+
+      const data = await resp.json() as any;
+      if (!resp.ok) throw new Error(data.error || 'שגיאה בניתוח התמונה');
+
+      if (data.error || !data.expenses?.length) {
+        setError(data.error || 'לא זוהו הוצאות. וודא שהתמונה מכילה שמות וסכומים ברורים.');
         return;
       }
-      const expenses = parseExpensesFromText(text);
-      if (!expenses.length) {
-        setError('לא זוהו הוצאות. וודא שהתמונה מכילה שמות וסכומים ברורים.');
-        return;
-      }
-      setPreview(expenses.map(e => ({ ...e, selected: true })));
+      setPreview(data.expenses.map((e: any) => ({ ...e, selected: true })));
     } catch (e: any) {
-      setError('שגיאה בניתוח התמונה. נסה שוב.');
+      setError(e.message || 'שגיאה בניתוח התמונה. נסה שוב.');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const toggleRow = (i: number) =>
+    const toggleRow = (i: number) =>
     setPreview(prev => prev.map((r, idx) => idx === i ? { ...r, selected: !r.selected } : r));
 
   const handleImport = async () => {

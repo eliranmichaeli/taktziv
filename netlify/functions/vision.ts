@@ -1,15 +1,16 @@
 // netlify/functions/vision.ts
+// OCR חינמי דרך OCR.space API — ללא Workers, ללא CDN
 import type { Handler } from '@netlify/functions';
 
 function parseExpenses(text: string): { name: string; amount: number; currency: string }[] {
-  const lines   = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
+  const lines   = text.split('\n').map(l => l.trim()).filter(Boolean);
   const results: { name: string; amount: number; currency: string }[] = [];
   const seen    = new Set<string>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // חפש סכום כסף בשורה
+    // חפש סכום כסף — מספר עם אפשרות לנקודה/פסיק
     const amountMatch = line.match(/([\d,]+(?:\.\d{1,2})?)/);
     if (!amountMatch) continue;
 
@@ -22,21 +23,18 @@ function parseExpenses(text: string): { name: string; amount: number; currency: 
     else if (line.includes('€') || /eur/i.test(line)) currency = 'EUR';
     else if (line.includes('£') || /gbp/i.test(line)) currency = 'GBP';
 
-    // שם: הטקסט בשורה ללא המספר, או השורה הקודמת
-    let name = line.replace(amountMatch[0], '').replace(/[₪$€£:\-–|.,]/g, '').trim();
+    // שם: טקסט בשורה ללא המספר, או שורה קודמת
+    let name = line.replace(amountMatch[0], '').replace(/[₪$€£:\-–|.,\d]/g, '').trim();
     if (!name || name.length < 2) {
       name = i > 0 ? lines[i - 1].replace(/[0-9₪$€£:\-–|.,]/g, '').trim() : '';
     }
     if (!name || name.length < 2) continue;
 
-    // הימנע מכפילויות
-    const key = `${name}-${amount}`;
+    const key = `${name}__${amount}`;
     if (seen.has(key)) continue;
     seen.add(key);
-
     results.push({ name, amount, currency });
   }
-
   return results;
 }
 
@@ -51,12 +49,12 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
   if (event.httpMethod !== 'POST')   return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'Method not allowed' }) };
 
-  const apiKey = process.env.GOOGLE_VISION_API_KEY;
-  if (!apiKey) {
-    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'GOOGLE_VISION_API_KEY חסר בהגדרות Netlify' }) };
+  const ocrKey = process.env.OCR_SPACE_API_KEY;
+  if (!ocrKey) {
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'OCR_SPACE_API_KEY חסר בהגדרות Netlify' }) };
   }
 
-  let body: { image?: string } = {};
+  let body: { image?: string; mimeType?: string } = {};
   try {
     body = JSON.parse(event.body || '{}');
   } catch {
@@ -68,30 +66,41 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const visionRes = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [{
-            image:    { content: body.image },
-            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-          }],
-        }),
-      }
-    );
+    const mimeType = body.mimeType || 'image/jpeg';
+    const dataUri  = `data:${mimeType};base64,${body.image}`;
 
-    const visionData = await visionRes.json() as any;
+    // קריאה ל-OCR.space
+    const formData = new URLSearchParams();
+    formData.append('base64Image', dataUri);
+    formData.append('language',   'heb');        // עברית ראשון
+    formData.append('isOverlayRequired', 'false');
+    formData.append('detectOrientation',  'true');
+    formData.append('scale',              'true');
+    formData.append('isTable',            'true'); // מצוין לטבלאות Excel
 
-    if (!visionRes.ok) {
-      const errMsg = visionData?.error?.message || 'שגיאה ב-Google Vision API';
-      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: errMsg }) };
+    const ocrResp = await fetch('https://api.ocr.space/parse/image', {
+      method:  'POST',
+      headers: {
+        'apikey':       ocrKey,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const ocrData = await ocrResp.json() as any;
+
+    if (!ocrResp.ok || ocrData.IsErroredOnProcessing) {
+      const msg = ocrData?.ErrorMessage?.[0] || 'שגיאה ב-OCR';
+      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: msg }) };
     }
 
-    const fullText: string = visionData?.responses?.[0]?.fullTextAnnotation?.text || '';
-    if (!fullText) {
-      return { statusCode: 200, headers: cors, body: JSON.stringify({ expenses: [], error: 'לא זוהה טקסט בתמונה — נסה תמונה ברורה יותר' }) };
+    // חלץ טקסט מכל הדפים
+    const fullText = (ocrData.ParsedResults || [])
+      .map((r: any) => r.ParsedText || '')
+      .join('\n');
+
+    if (!fullText.trim()) {
+      return { statusCode: 200, headers: cors, body: JSON.stringify({ expenses: [], error: 'לא זוהה טקסט — נסה תמונה ברורה יותר' }) };
     }
 
     const expenses = parseExpenses(fullText);
